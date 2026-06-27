@@ -14,7 +14,7 @@ import jwt
 import bcrypt
 from datetime import datetime, timezone, timedelta
 
-from emergentintegrations.llm.chat import LlmChat, UserMessage
+from openai import AsyncOpenAI
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -25,7 +25,8 @@ db = client[os.environ['DB_NAME']]
 
 JWT_SECRET = os.environ['JWT_SECRET']
 JWT_ALGO = "HS256"
-EMERGENT_LLM_KEY = os.environ['EMERGENT_LLM_KEY']
+OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY', '')
+openai_client = AsyncOpenAI(api_key=OPENAI_API_KEY) if OPENAI_API_KEY else None
 
 # SendGrid (optional — leads always save; email only sends when key is set)
 SENDGRID_API_KEY = os.environ.get('SENDGRID_API_KEY', '')
@@ -500,13 +501,17 @@ async def paving_estimate(body: PavingEstimateBody):
         "Then 1 line: 'This is a guide only - book a free site survey for an exact quote.'\n"
         "Keep it under 130 words."
     )
-    chat = LlmChat(
-        api_key=EMERGENT_LLM_KEY,
-        session_id=f"paving-estimate-{oid()}",
-        system_message="You are a helpful, honest UK paving cost estimator.",
-    ).with_model("openai", "gpt-5.4")
+    if not openai_client:
+        raise HTTPException(status_code=503, detail="AI service not configured")
     try:
-        reply = await chat.send_message(UserMessage(text=prompt))
+        response = await openai_client.chat.completions.create(
+            model="gpt-4o",
+            messages=[
+                {"role": "system", "content": "You are a helpful, honest UK paving cost estimator."},
+                {"role": "user", "content": prompt},
+            ],
+        )
+        reply = response.choices[0].message.content
     except Exception as e:
         logger.error(f"Paving estimate error: {e}")
         raise HTTPException(status_code=500, detail="AI service error")
@@ -516,17 +521,21 @@ async def paving_estimate(body: PavingEstimateBody):
 # ---------- AI ----------
 @api_router.post("/ai/chat")
 async def ai_chat(body: ChatBody, user=Depends(get_current_user)):
-    chat = LlmChat(
-        api_key=EMERGENT_LLM_KEY,
-        session_id=f"{user['id']}-{body.session_id}",
-        system_message=(
-            "You are T&B Paving AI, an expert paving and driveway assistant. "
-            "Help with project planning, scheduling, building codes, material calculations, "
-            "safety guidance, and cost estimation. Be concise, practical and use clear structure."
-        ),
-    ).with_model("openai", "gpt-5.4")
+    if not openai_client:
+        raise HTTPException(status_code=503, detail="AI service not configured")
     try:
-        reply = await chat.send_message(UserMessage(text=body.message))
+        response = await openai_client.chat.completions.create(
+            model="gpt-4o",
+            messages=[
+                {"role": "system", "content": (
+                    "You are T&B Paving AI, an expert paving and driveway assistant. "
+                    "Help with project planning, scheduling, building codes, material calculations, "
+                    "safety guidance, and cost estimation. Be concise, practical and use clear structure."
+                )},
+                {"role": "user", "content": body.message},
+            ],
+        )
+        reply = response.choices[0].message.content
     except Exception as e:
         logger.error(f"AI chat error: {e}")
         raise HTTPException(status_code=500, detail="AI service error")
@@ -564,13 +573,17 @@ async def ai_estimate(body: EstimateBody, user=Depends(get_current_user)):
         "4. KEY ASSUMPTIONS\n"
         "Keep it practical and use plain text with clear headers."
     )
-    chat = LlmChat(
-        api_key=EMERGENT_LLM_KEY,
-        session_id=f"{user['id']}-estimate-{oid()}",
-        system_message="You are a senior construction cost estimator with 20 years experience.",
-    ).with_model("openai", "gpt-5.4")
+    if not openai_client:
+        raise HTTPException(status_code=503, detail="AI service not configured")
     try:
-        reply = await chat.send_message(UserMessage(text=prompt))
+        response = await openai_client.chat.completions.create(
+            model="gpt-4o",
+            messages=[
+                {"role": "system", "content": "You are a senior construction cost estimator with 20 years experience."},
+                {"role": "user", "content": prompt},
+            ],
+        )
+        reply = response.choices[0].message.content
     except Exception as e:
         logger.error(f"AI estimate error: {e}")
         raise HTTPException(status_code=500, detail="AI service error")
