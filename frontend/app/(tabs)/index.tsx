@@ -7,6 +7,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { C, S, R, SHADOW } from "@/src/theme";
 import { Btn, Eyebrow, SectionTitle, Logo, Stars } from "@/src/components/ui";
+import { Tilt3D } from "@/src/components/Card3D";
 import { BIZ, STATS, TRUST, SERVICES, STEPS, HERO_IMG, GALLERY, TESTIMONIALS } from "@/src/brand";
 
 export default function Home() {
@@ -76,14 +77,14 @@ export default function Home() {
           <SectionTitle>Our Paving Services</SectionTitle>
           <View style={{ marginTop: S.lg, gap: S.md }}>
             {SERVICES.slice(0, 4).map((sv) => (
-              <Pressable key={sv.id} testID={`home-service-${sv.id}`} style={styles.svCard} onPress={() => router.push("/(tabs)/services")}>
+              <Tilt3D key={sv.id} testID={`home-service-${sv.id}`} style={styles.svCard} onPress={() => router.push("/(tabs)/services")} max={10}>
                 <View style={styles.svIcon}><Ionicons name={sv.icon as any} size={22} color={C.brand} /></View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.svTitle}>{sv.title}</Text>
                   <Text style={styles.svDesc} numberOfLines={2}>{sv.desc}</Text>
                 </View>
                 <Ionicons name="chevron-forward" size={20} color={C.muted} />
-              </Pressable>
+              </Tilt3D>
             ))}
           </View>
           <Btn testID="home-all-services" label="See All 11 Services" variant="outline" onPress={() => router.push("/(tabs)/services")} style={{ marginTop: S.lg }} />
@@ -112,11 +113,11 @@ export default function Home() {
           <SectionTitle>Recent Projects</SectionTitle>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: S.md, paddingTop: S.lg }}>
             {GALLERY.slice(0, 5).map((g, i) => (
-              <Pressable key={i} testID={`home-gallery-${i}`} onPress={() => router.push("/(tabs)/gallery")} style={styles.workCard}>
+              <Tilt3D key={i} testID={`home-gallery-${i}`} onPress={() => router.push("/(tabs)/gallery")} style={styles.workCard} max={12}>
                 <Image source={{ uri: g.img }} style={styles.workImg} contentFit="cover" transition={200} />
                 <Text style={styles.workLabel}>{g.label}</Text>
                 <Text style={styles.workTown}>{g.town}</Text>
-              </Pressable>
+              </Tilt3D>
             ))}
           </ScrollView>
         </View>

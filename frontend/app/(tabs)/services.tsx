@@ -3,9 +3,13 @@ import { View, Text, StyleSheet, FlatList, Pressable } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import { C, S, R, SHADOW } from "@/src/theme";
 import { Eyebrow, Btn } from "@/src/components/ui";
+import { FlipCard } from "@/src/components/Card3D";
 import { SERVICES } from "@/src/brand";
+
+const CARD_H = 180;
 
 export default function Services() {
   const insets = useSafeAreaInsets();
@@ -15,7 +19,7 @@ export default function Services() {
       <View style={[styles.header, { paddingTop: insets.top + S.md }]}>
         <Eyebrow>What We Offer</Eyebrow>
         <Text style={styles.title}>Our Services</Text>
-        <Text style={styles.sub}>Quality workmanship across every type of paving — all backed by our 10-year guarantee.</Text>
+        <Text style={styles.sub}>Tap any card to flip it for details. All work backed by our 10-year guarantee.</Text>
       </View>
       <FlatList
         data={SERVICES}
@@ -24,11 +28,32 @@ export default function Services() {
         columnWrapperStyle={{ gap: S.md, paddingHorizontal: S.lg }}
         contentContainerStyle={{ paddingTop: S.md, paddingBottom: S["3xl"], gap: S.md }}
         renderItem={({ item }) => (
-          <Pressable testID={`service-${item.id}`} style={styles.card} onPress={() => router.push("/(tabs)/quote")}>
-            <View style={styles.icon}><Ionicons name={item.icon as any} size={24} color={C.brand} /></View>
-            <Text style={styles.cardTitle}>{item.title}</Text>
-            <Text style={styles.cardDesc}>{item.desc}</Text>
-          </Pressable>
+          <View style={{ flex: 1 }} testID={`service-${item.id}`}>
+            <FlipCard
+              height={CARD_H}
+              testID={`flip-${item.id}`}
+              front={
+                <View style={[styles.face, styles.front]}>
+                  <View style={styles.iconBox}><Ionicons name={item.icon as any} size={26} color={C.brand} /></View>
+                  <Text style={styles.frontTitle}>{item.title}</Text>
+                  <View style={styles.flipHint}>
+                    <Ionicons name="sync" size={12} color={C.muted} />
+                    <Text style={styles.flipHintText}>TAP FOR DETAILS</Text>
+                  </View>
+                </View>
+              }
+              back={
+                <LinearGradient colors={[C.brand, C.brandDark]} style={[styles.face, styles.back]}>
+                  <Text style={styles.backTitle}>{item.title}</Text>
+                  <Text style={styles.backDesc}>{item.desc}</Text>
+                  <View style={styles.backHint}>
+                    <Ionicons name="arrow-undo" size={12} color="rgba(255,255,255,0.8)" />
+                    <Text style={styles.backHintText}>TAP TO FLIP BACK</Text>
+                  </View>
+                </LinearGradient>
+              }
+            />
+          </View>
         )}
         ListFooterComponent={
           <View style={{ paddingHorizontal: S.lg, paddingTop: S.xl }}>
@@ -48,10 +73,17 @@ const styles = StyleSheet.create({
   header: { paddingHorizontal: S.lg, paddingBottom: S.md, backgroundColor: C.surface, borderBottomWidth: 1, borderBottomColor: C.border },
   title: { fontSize: 30, fontWeight: "900", color: C.ink, letterSpacing: -0.8 },
   sub: { fontSize: 14, color: C.muted, marginTop: 6, lineHeight: 20 },
-  card: { flex: 1, backgroundColor: C.surface, borderRadius: R.lg, padding: S.lg, borderWidth: 1, borderColor: C.border, ...SHADOW.card },
-  icon: { width: 50, height: 50, borderRadius: R.md, backgroundColor: C.accentSoft, alignItems: "center", justifyContent: "center", marginBottom: S.md },
-  cardTitle: { fontSize: 15, fontWeight: "800", color: C.ink },
-  cardDesc: { fontSize: 12.5, color: C.muted, marginTop: 6, lineHeight: 17 },
+  face: { flex: 1, borderRadius: R.lg, ...SHADOW.card },
+  front: { backgroundColor: C.surface, borderWidth: 1, borderColor: C.border, padding: S.lg, justifyContent: "space-between" },
+  iconBox: { width: 52, height: 52, borderRadius: R.md, backgroundColor: C.accentSoft, alignItems: "center", justifyContent: "center" },
+  frontTitle: { fontSize: 16, fontWeight: "800", color: C.ink, marginTop: S.sm },
+  flipHint: { flexDirection: "row", alignItems: "center", gap: 4 },
+  flipHintText: { fontSize: 9.5, fontWeight: "800", letterSpacing: 0.8, color: C.muted },
+  back: { padding: S.lg, justifyContent: "space-between" },
+  backTitle: { fontSize: 16, fontWeight: "900", color: "#fff" },
+  backDesc: { fontSize: 13, color: "rgba(255,255,255,0.92)", lineHeight: 19, flex: 1, marginTop: 6 },
+  backHint: { flexDirection: "row", alignItems: "center", gap: 4 },
+  backHintText: { fontSize: 9.5, fontWeight: "800", letterSpacing: 0.8, color: "rgba(255,255,255,0.8)" },
   ctaCard: { backgroundColor: C.ink, borderRadius: R.xl, padding: S.xl },
   ctaTitle: { fontSize: 19, fontWeight: "900", color: C.surface, letterSpacing: -0.3 },
   ctaSub: { fontSize: 13.5, color: "rgba(255,255,255,0.72)", marginTop: 8, lineHeight: 20 },

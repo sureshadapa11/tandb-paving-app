@@ -53,7 +53,7 @@ export const STEPS = [
 const REAL = "https://customer-assets.emergentagent.com/job_buildflow-156/artifacts/qxort8ey_2c49ca3b-bbcc-455e-97a5-2c2167a69e94.jpeg";
 const px = (id: string) => `https://images.pexels.com/photos/${id}/pexels-photo-${id}.jpeg?auto=compress&cs=tinysrgb&w=1200`;
 
-export const HERO_IMG = px("259588");
+export const HERO_IMG = REAL;
 export const ABOUT_IMG = REAL;
 
 export const GALLERY = [

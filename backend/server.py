@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter, Depends, HTTPException, status
+from fastapi import FastAPI, APIRouter, Depends, HTTPException, status, BackgroundTasks
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
@@ -26,6 +26,11 @@ db = client[os.environ['DB_NAME']]
 JWT_SECRET = os.environ['JWT_SECRET']
 JWT_ALGO = "HS256"
 EMERGENT_LLM_KEY = os.environ['EMERGENT_LLM_KEY']
+
+# SendGrid (optional — leads always save; email only sends when key is set)
+SENDGRID_API_KEY = os.environ.get('SENDGRID_API_KEY', '')
+SENDER_EMAIL = os.environ.get('SENDER_EMAIL', '')
+OWNER_EMAIL = os.environ.get('OWNER_EMAIL', 'bbirdpaving@gmail.com')
 
 app = FastAPI()
 api_router = APIRouter(prefix="/api")
@@ -431,11 +436,38 @@ async def dashboard(user=Depends(get_current_user)):
 
 
 # ---------- Enquiries (public lead capture) ----------
+def send_owner_email(enq: dict):
+    """Notify the business owner of a new enquiry. No-op if SendGrid not configured."""
+    if not SENDGRID_API_KEY or not SENDER_EMAIL:
+        logger.info("SendGrid not configured — skipping owner email (lead saved to dashboard).")
+        return
+    try:
+        from sendgrid import SendGridAPIClient
+        from sendgrid.helpers.mail import Mail
+        html = f"""
+        <h2>New T&amp;B Paving enquiry</h2>
+        <p><strong>Name:</strong> {enq.get('name','')}</p>
+        <p><strong>Phone:</strong> {enq.get('phone','-')}</p>
+        <p><strong>Email:</strong> {enq.get('email','-')}</p>
+        <p><strong>Service:</strong> {enq.get('service','-')}</p>
+        <p><strong>Message:</strong><br/>{enq.get('message','-')}</p>
+        <hr/><p style="color:#888">Sent automatically from your T&amp;B Paving website.</p>
+        """
+        msg = Mail(from_email=SENDER_EMAIL, to_emails=OWNER_EMAIL,
+                   subject=f"New enquiry: {enq.get('name','')} ({enq.get('service','general')})",
+                   html_content=html)
+        SendGridAPIClient(SENDGRID_API_KEY).send(msg)
+        logger.info("Owner enquiry email sent.")
+    except Exception as e:
+        logger.error(f"SendGrid email failed (lead still saved): {e}")
+
+
 @api_router.post("/enquiries")
-async def create_enquiry(body: EnquiryBody):
+async def create_enquiry(body: EnquiryBody, background: BackgroundTasks):
     doc = body.dict()
     doc.update({"id": oid(), "status": "new", "created_at": now_iso()})
     await db.enquiries.insert_one(doc)
+    background.add_task(send_owner_email, {k: doc[k] for k in ("name", "phone", "email", "service", "message")})
     return {"ok": True, "id": doc["id"]}
 
 

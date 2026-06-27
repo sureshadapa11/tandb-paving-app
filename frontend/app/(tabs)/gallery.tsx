@@ -5,6 +5,7 @@ import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 import { C, S, R } from "@/src/theme";
 import { Eyebrow } from "@/src/components/ui";
+import { Tilt3D } from "@/src/components/Card3D";
 import { GALLERY } from "@/src/brand";
 
 const W = Dimensions.get("window").width;
@@ -27,13 +28,13 @@ export default function Gallery() {
         columnWrapperStyle={{ gap: S.md, paddingHorizontal: S.lg }}
         contentContainerStyle={{ paddingTop: S.md, paddingBottom: S["3xl"], gap: S.md }}
         renderItem={({ item, index }) => (
-          <Pressable testID={`gallery-item-${index}`} style={styles.card} onPress={() => setActive(index)}>
+          <Tilt3D testID={`gallery-item-${index}`} style={[styles.card, { flex: 1 }]} onPress={() => setActive(index)} max={10}>
             <Image source={{ uri: item.img }} style={styles.img} contentFit="cover" transition={200} />
             <View style={styles.caption}>
               <Text style={styles.label} numberOfLines={1}>{item.label}</Text>
               <Text style={styles.town}>{item.town}</Text>
             </View>
-          </Pressable>
+          </Tilt3D>
         )}
       />
 
