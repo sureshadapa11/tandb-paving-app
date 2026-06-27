@@ -4,6 +4,14 @@ import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { C, S, R, SHADOW } from "@/src/theme";
 
+export function MaxWidth({ children, style }: { children: React.ReactNode; style?: any }) {
+  return (
+    <View style={[styles.maxWidth, style]}>
+      {children}
+    </View>
+  );
+}
+
 export function Logo({ size = 40, showText = true }: { size?: number; showText?: boolean }) {
   return (
     <View style={{ flexDirection: "row", alignItems: "center" }}>
@@ -77,6 +85,7 @@ export function Stars({ n = 5, size = 14 }: { n?: number; size?: number }) {
 }
 
 const styles = StyleSheet.create({
+  maxWidth: { maxWidth: 1200, width: "100%", alignSelf: "center" },
   row: { flexDirection: "row", alignItems: "center", justifyContent: "center" },
   logoCircle: { backgroundColor: C.brand, alignItems: "center", justifyContent: "center" },
   logoMark: { color: C.onBrand, fontWeight: "900", letterSpacing: -0.5 },
