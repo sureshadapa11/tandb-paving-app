@@ -1,74 +1,55 @@
 import React from "react";
-import { StyleSheet, ViewStyle } from "react-native";
+import { StyleSheet, ViewStyle, Pressable } from "react-native";
 import Animated, {
   useSharedValue, useAnimatedStyle, withSpring, withTiming, interpolate, runOnJS,
 } from "react-native-reanimated";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import * as Haptics from "expo-haptics";
 
-const SPRING = { damping: 14, stiffness: 140 };
+const SPRING = { damping: 15, stiffness: 160 };
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 /**
- * Tilt3D — a card that tilts in 3D toward the finger (parallax depth) and
- * lifts on press. Falls back to a simple press if gestures aren't available.
+ * Tilt3D — lightweight 3D press depth. Uses a plain Pressable (NO pan gesture)
+ * so it never competes with parent ScrollView/FlatList scrolling. On press it
+ * scales up slightly and tilts back for a tactile 3D feel.
  */
 export function Tilt3D({
-  children, onPress, style, max = 14, testID,
+  children, onPress, style, testID,
 }: {
   children: React.ReactNode;
   onPress?: () => void;
   style?: ViewStyle | ViewStyle[];
-  max?: number;
+  max?: number; // accepted for API compatibility (unused)
   testID?: string;
 }) {
-  const rx = useSharedValue(0);
-  const ry = useSharedValue(0);
   const sc = useSharedValue(1);
-  const w = useSharedValue(1);
-  const h = useSharedValue(1);
-
-  const pan = Gesture.Pan()
-    .onBegin(() => { sc.value = withSpring(1.04, SPRING); })
-    .onUpdate((e) => {
-      ry.value = (e.x / w.value - 0.5) * max * 2;
-      rx.value = -(e.y / h.value - 0.5) * max * 2;
-    })
-    .onFinalize(() => {
-      rx.value = withSpring(0, SPRING);
-      ry.value = withSpring(0, SPRING);
-      sc.value = withSpring(1, SPRING);
-    });
-
-  const tap = Gesture.Tap().maxDistance(12).onEnd(() => {
-    if (onPress) runOnJS(onPress)();
-  });
-
-  const gesture = Gesture.Simultaneous(pan, tap);
+  const rot = useSharedValue(0);
 
   const aStyle = useAnimatedStyle(() => ({
     transform: [
-      { perspective: 900 },
-      { rotateX: `${rx.value}deg` },
-      { rotateY: `${ry.value}deg` },
+      { perspective: 700 },
       { scale: sc.value },
+      { rotateX: `${rot.value}deg` },
     ],
   }));
 
   return (
-    <GestureDetector gesture={gesture}>
-      <Animated.View
-        testID={testID}
-        onLayout={(e) => { w.value = e.nativeEvent.layout.width; h.value = e.nativeEvent.layout.height; }}
-        style={[style, aStyle]}
-      >
-        {children}
-      </Animated.View>
-    </GestureDetector>
+    <AnimatedPressable
+      testID={testID}
+      onPress={onPress}
+      onPressIn={() => { sc.value = withSpring(1.03, SPRING); rot.value = withSpring(5, SPRING); }}
+      onPressOut={() => { sc.value = withSpring(1, SPRING); rot.value = withSpring(0, SPRING); }}
+      style={[style, aStyle]}
+    >
+      {children}
+    </AnimatedPressable>
   );
 }
 
 /**
  * FlipCard — tap to flip between front and back in true 3D (rotateY).
+ * Tap gesture (maxDistance) yields to scrolling, so it stays smooth in lists.
  */
 export function FlipCard({
   front, back, height = 200, style, testID,
@@ -95,7 +76,7 @@ export function FlipCard({
     opacity: spin.value >= 0.5 ? 1 : 0,
   }));
 
-  const tap = Gesture.Tap().maxDistance(14).onEnd(() => runOnJS(flip)());
+  const tap = Gesture.Tap().maxDistance(12).onEnd(() => runOnJS(flip)());
 
   return (
     <GestureDetector gesture={tap}>

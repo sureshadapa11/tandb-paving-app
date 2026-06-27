@@ -1,0 +1,29 @@
+{
+  "summary": "Scroll-performance fix verified end-to-end on mobile viewport 390x844 against the public Expo web preview. Tilt3D now uses a plain Pressable (no GestureDetector/Pan) so it no longer fights parent ScrollView/FlatList. All scroll surfaces are smooth and reach their bounds; all tap/flip/navigation regressions still work. (a) Home vertical scroll moves freely and the footer 'Staff Login' (admin-link) is reachable (scrollTop 0->800+, scrollHeight 2691, reached_admin=True). (b) Home 'Our Work' HORIZONTAL carousel scrolls (scrollLeft 0 -> 400, scrollWidth 1148, no stuck/jank). (c) Gallery grid scrolls vertically all the way to the bottom row (scrollTop 0 -> 187 = scrollHeight 840 - clientHeight 653; all 8 gallery-item-N rendered and last row visible in screenshot). (d) Services grid scrolls vertically (0 -> 767). (e) Reviews scrolls (0 -> 1061), Quote scrolls (0 -> 438). Regressions: home-service-block-paving tap navigates to /services (service-block-paving rendered); home-gallery-0 tap navigates to /gallery (8 gallery items render); gallery-item-1 tap opens viewer-close; flip-block-paving tap flips card (front-> back content 'TAP TO FLIP BACK' visible). Conversion: est-run -> est-result returns 'ESTIMATE: £2,500 - £6,500 ...' (gpt-5.4 via Emergent LLM works, ~6s); enq-name/enq-phone/enq-submit -> enquiry-success shown; the TEST_Scroll_Verify enquiry appears at the top of the admin dashboard (admin login admin@tbpaving.co.uk/paving2009 succeeds, 6 done-<uuid> buttons rendered). Console still emits the same two cosmetic react-native-web warnings as iteration 2 (shadow* deprecated, props.pointerEvents deprecated) - unchanged, harmless on native.",
+  "backend_issues": { "critical": [], "minor": [] },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": [
+      {"component": "shadow* style props (react-native-web)", "issue": "Console warning '\"shadow*\" style props are deprecated. Use \"boxShadow\".' Source: SHADOW.card in /app/frontend/src/theme.ts used across cards. Cosmetic on web preview only. Unchanged from iter2."},
+      {"component": "View pointerEvents prop", "issue": "Console warning 'props.pointerEvents is deprecated. Use style.pointerEvents.' Likely from a dependency (SafeAreaProvider/Tabs) not authored code. Cosmetic. Unchanged from iter2."}
+    ]
+  },
+  "test_report_links": ["/app/test_reports/iteration_3.json", "/app/backend/tests/test_tbpaving_api.py"],
+  "action_items": [
+    "(Low / cosmetic, carried over from iter2) Wrap SHADOW.card in /app/frontend/src/theme.ts with Platform.select or use boxShadow on web to silence the shadow* deprecation warning."
+  ],
+  "critical_code_review_comments": [
+    "Card3D.Tilt3D: cleanly removed Pan gesture; AnimatedPressable + onPressIn/onPressOut spring is the correct pattern to keep parent scrollers smooth. 'max' prop kept for API compatibility (unused) - fine.",
+    "Card3D.FlipCard still uses Gesture.Tap().maxDistance(12) which correctly yields to scroll, so Services grid stays scrollable while remaining tappable to flip. Verified.",
+    "Gallery/Services FlatList perf props (windowSize / removeClippedSubviews / initialNumToRender etc., not directly reviewed in this iteration but inferred from green scroll metrics) appear to be in effect - all 8 gallery items render and grid bottom is reachable."
+  ],
+  "updated_files": [],
+  "success_rate": { "backend": "not retested this iteration (per request - frontend-only)", "frontend": "100% (12/12 scroll + tap + conversion + admin checks)" },
+  "seed_data_creation": "Added one new enquiry 'TEST_Scroll_Verify / 07000000000' via the public quote flow; visible at top of admin dashboard. Safe to delete or leave for demo. No other seed data changes.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Use EXPO_PUBLIC_BACKEND_URL (https://buildflow-156.preview.emergentagent.com). Routes: /, /services, /gallery, /reviews, /quote, /admin. Tab bar visible at 390x844. To verify Tilt3D didn't regress to fighting scroll: pick the deepest scrollable (largest scrollHeight-clientHeight) and assert .scrollBy() actually moves scrollTop. For horizontal Our Work carousel on Home, find the ancestor of home-gallery-0 with overflowX auto/scroll. Gallery is a SHORT page on mobile - max scroll range is only ~187px (8 items fit in roughly 2 screens); do not assert >200px movement, instead assert scrollTop reaches (scrollHeight - clientHeight). AI estimate latency 4-8s; allow >=60s timeout.",
+  "rca_of_issue": "Previous bug: Tilt3D wrapped children in a GestureDetector(Pan) which on web mapped to pointer events that consumed touch/scroll, breaking vertical/horizontal scroll on Home/Gallery/Services. Fix in /app/frontend/src/components/Card3D.tsx replaces the Pan gesture with an AnimatedPressable using onPressIn/onPressOut springs - press feel preserved, scrolling no longer intercepted. Verified via Playwright: all five tabs scroll and the previously-stuck Home horizontal Our Work carousel scrolls; tap regressions (navigate, open viewer, flip) all still work."
+}

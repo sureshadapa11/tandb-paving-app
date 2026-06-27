@@ -25,6 +25,10 @@ export default function Gallery() {
         data={GALLERY}
         keyExtractor={(_, i) => String(i)}
         numColumns={2}
+        removeClippedSubviews
+        initialNumToRender={6}
+        maxToRenderPerBatch={6}
+        windowSize={5}
         columnWrapperStyle={{ gap: S.md, paddingHorizontal: S.lg }}
         contentContainerStyle={{ paddingTop: S.md, paddingBottom: S["3xl"], gap: S.md }}
         renderItem={({ item, index }) => (
