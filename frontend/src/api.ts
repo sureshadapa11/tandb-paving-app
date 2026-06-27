@@ -3,7 +3,7 @@ import { storage } from "@/src/utils/storage";
 const BASE = process.env.EXPO_PUBLIC_BACKEND_URL;
 const API = `${BASE}/api`;
 
-export const TOKEN_KEY = "buildpro_token";
+export const TOKEN_KEY = "tbpaving_token";
 
 async function authHeaders() {
   const token = await storage.secureGet<string>(TOKEN_KEY, "");

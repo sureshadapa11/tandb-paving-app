@@ -520,7 +520,7 @@ async def ai_chat(body: ChatBody, user=Depends(get_current_user)):
         api_key=EMERGENT_LLM_KEY,
         session_id=f"{user['id']}-{body.session_id}",
         system_message=(
-            "You are BuildPro AI, an expert construction project assistant. "
+            "You are T&B Paving AI, an expert paving and driveway assistant. "
             "Help with project planning, scheduling, building codes, material calculations, "
             "safety guidance, and cost estimation. Be concise, practical and use clear structure."
         ),
@@ -579,7 +579,7 @@ async def ai_estimate(body: EstimateBody, user=Depends(get_current_user)):
 
 @api_router.get("/")
 async def root():
-    return {"message": "BuildPro API"}
+    return {"message": "T&B Paving API"}
 
 
 app.include_router(api_router)
