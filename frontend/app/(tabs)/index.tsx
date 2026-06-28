@@ -55,7 +55,7 @@ export default function Home() {
     >
       {/* ── HERO ── */}
       <View style={[styles.hero, { height: heroH }]}>
-        <Image source={{ uri: HERO_IMG }} style={StyleSheet.absoluteFill} contentFit="cover" transition={300} />
+        <Image source={HERO_IMG} style={StyleSheet.absoluteFill} contentFit="cover" transition={300} />
         <LinearGradient
           colors={["rgba(20,15,10,0.15)", "rgba(20,15,10,0.85)"]}
           style={StyleSheet.absoluteFill}
@@ -221,7 +221,7 @@ export default function Home() {
                 max={10}
               >
                 <Image
-                  source={{ uri: g.img }}
+                  source={g.img}
                   style={[styles.galleryImg, { height: isDesktop ? 180 : 120 }]}
                   contentFit="cover"
                   transition={200}

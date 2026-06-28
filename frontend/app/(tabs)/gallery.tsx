@@ -39,7 +39,7 @@ export default function Gallery() {
         contentContainerStyle={{ paddingTop: S.md, paddingBottom: S["3xl"], gap: S.md, paddingHorizontal: hPad, alignSelf: "center", width: "100%", maxWidth: 1200 }}
         renderItem={({ item, index }) => (
           <Tilt3D testID={`gallery-item-${index}`} style={[styles.card, { flex: 1 }]} onPress={() => setActive(index)} max={10}>
-            <Image source={{ uri: item.img }} style={[styles.img, { height: imgH }]} contentFit="cover" transition={200} />
+            <Image source={item.img} style={[styles.img, { height: imgH }]} contentFit="cover" transition={200} />
             <View style={styles.caption}>
               <Text style={styles.label} numberOfLines={1}>{item.label}</Text>
               <Text style={styles.town}>{item.town}</Text>
@@ -55,7 +55,7 @@ export default function Gallery() {
           </Pressable>
           {active !== null && (
             <>
-              <Image source={{ uri: GALLERY[active].img }} style={{ width: viewerSize, height: viewerSize * 0.65, borderRadius: isDesktop ? R.xl : 0 }} contentFit="contain" />
+              <Image source={GALLERY[active].img} style={{ width: viewerSize, height: viewerSize * 0.65, borderRadius: isDesktop ? R.xl : 0 }} contentFit="contain" />
               <Text style={styles.viewerLabel}>{GALLERY[active].label}</Text>
               <Text style={styles.viewerTown}>{GALLERY[active].town}</Text>
             </>

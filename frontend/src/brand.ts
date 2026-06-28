@@ -49,22 +49,22 @@ export const STEPS = [
   { n: "04", icon: "shield-checkmark", title: "10-Year Guarantee", desc: "Relax — your new surface is built to last and fully guaranteed." },
 ];
 
-// Real T&B job photo (uploaded) + validated stock imagery
-const REAL = "https://customer-assets.emergentagent.com/job_buildflow-156/artifacts/qxort8ey_2c49ca3b-bbcc-455e-97a5-2c2167a69e94.jpeg";
-const px = (id: string) => `https://images.pexels.com/photos/${id}/pexels-photo-${id}.jpeg?auto=compress&cs=tinysrgb&w=1200`;
-
-export const HERO_IMG = REAL;
-export const ABOUT_IMG = REAL;
+// Real T&B Paving project photos
+export const HERO_IMG = require("../assets/images/block-paving.jpg");
+export const ABOUT_IMG = require("../assets/images/sandstone-patio.jpg");
 
 export const GALLERY = [
-  { img: REAL, label: "Block Paving Groundwork", town: "New Build, North West" },
-  { img: px("259588"), label: "Block Paved Driveway", town: "Stockport" },
-  { img: px("210617"), label: "Resin Bound Driveway", town: "Altrincham" },
-  { img: px("1396132"), label: "Natural Stone Patio", town: "Sale" },
-  { img: px("106399"), label: "Front Drive & Path", town: "Bolton" },
-  { img: px("1029599"), label: "Garden Patio", town: "Bury" },
-  { img: px("280222"), label: "Concrete Driveway", town: "Salford" },
-  { img: px("186077"), label: "Tarmac Driveway", town: "Wigan" },
+  { img: require("../assets/images/block-paving.jpg"),      label: "Block Paving Driveway",       town: "Manchester" },
+  { img: require("../assets/images/resin-driveway.jpg"),    label: "Resin Bound Driveway",         town: "Bolton" },
+  { img: require("../assets/images/gravel-driveway.jpg"),   label: "Gravel Driveway",              town: "Chorley" },
+  { img: require("../assets/images/sandstone-patio.jpg"),   label: "Indian Sandstone Patio",       town: "Stockport" },
+  { img: require("../assets/images/patio-garden.jpg"),      label: "Patio & Garden Design",        town: "Salford" },
+  { img: require("../assets/images/circular-patio.jpg"),    label: "Circular Feature Patio",       town: "Cheshire" },
+  { img: require("../assets/images/sandstone-cleaning.jpg"),label: "Patio Cleaning & Sealing",     town: "Bury" },
+  { img: require("../assets/images/garden-steps-1.jpg"),    label: "Garden Steps & Lawn",          town: "Altrincham" },
+  { img: require("../assets/images/garden-steps-2.jpg"),    label: "Garden Paths & Steps",         town: "Sale" },
+  { img: require("../assets/images/lawn-turf.jpg"),         label: "Lawn & Turf Laying",           town: "Urmston" },
+  { img: require("../assets/images/garden-patio-path.jpg"), label: "Garden Landscaping",           town: "Trafford" },
 ];
 
 export const TESTIMONIALS = [
