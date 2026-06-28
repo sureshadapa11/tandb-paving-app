@@ -17,7 +17,7 @@ const P = {
 
 type LineItem = { description: string; qty: string; unit_price: string };
 type Quote = {
-  id: number; client_name: string; type: string;
+  id: number; client_name: string; project_type: string;
   status: string; total: number; created_at: string;
 };
 
@@ -47,12 +47,12 @@ export default function Quotes() {
 
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [fetching, setFetching] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
 
-  // Builder state
   const [clientName, setClientName] = useState("");
-  const [type, setType] = useState("Block Paving");
+  const [projectType, setProjectType] = useState("Block Paving");
   const [lineItems, setLineItems] = useState<LineItem[]>([emptyLine()]);
   const [taxPercent, setTaxPercent] = useState("20");
 
@@ -61,10 +61,13 @@ export default function Quotes() {
   }, [user, loading]);
 
   const load = useCallback(async () => {
+    setLoadError(false);
     try {
       const data = await api.get("/quotes");
       setQuotes(data || []);
-    } catch {}
+    } catch {
+      setLoadError(true);
+    }
     setFetching(false);
   }, []);
 
@@ -79,9 +82,15 @@ export default function Quotes() {
   const resetForm = () => {
     setSelectedId(null);
     setClientName("");
-    setType("Block Paving");
+    setProjectType("Block Paving");
     setLineItems([emptyLine()]);
     setTaxPercent("20");
+  };
+
+  const loadQuoteIntoForm = (q: Quote) => {
+    setSelectedId(q.id);
+    setClientName(q.client_name);
+    setProjectType(q.project_type || "");
   };
 
   const saveQuote = async (status: "draft" | "sent") => {
@@ -89,10 +98,14 @@ export default function Quotes() {
       Alert.alert("Missing Info", "Please enter a client name.");
       return;
     }
+    if (lineItems.length === 0) {
+      Alert.alert("Missing Info", "Please add at least one line item.");
+      return;
+    }
     setSaving(true);
     const body = {
       client_name: clientName,
-      type,
+      project_type: projectType,
       status,
       line_items: lineItems.map((li) => ({
         description: li.description,
@@ -109,6 +122,7 @@ export default function Quotes() {
       }
       await load();
       resetForm();
+      Alert.alert("Saved", status === "sent" ? "Quote marked as sent." : "Draft saved.");
     } catch (e: any) {
       Alert.alert("Error", e.message || "Failed to save quote.");
     }
@@ -125,7 +139,9 @@ export default function Quotes() {
             await api.del(`/quotes/${id}`);
             setQuotes((prev) => prev.filter((q) => q.id !== id));
             if (selectedId === id) resetForm();
-          } catch {}
+          } catch {
+            Alert.alert("Error", "Could not delete quote.");
+          }
         },
       },
     ]);
@@ -142,45 +158,54 @@ export default function Quotes() {
   const QuoteList = (
     <View style={[styles.panel, isDesktop && styles.panelLeft]}>
       <Text style={styles.panelTitle}>Quotes ({quotes.length})</Text>
-      <ScrollView>
-        {quotes.length === 0 ? (
-          <Text style={styles.emptyText}>No quotes yet.</Text>
-        ) : (
-          quotes.map((q) => (
-            <TouchableOpacity
-              key={q.id}
-              style={[styles.quoteRow, selectedId === q.id && styles.quoteRowActive]}
-              onPress={() => setSelectedId(q.id === selectedId ? null : q.id)}
-              activeOpacity={0.7}
-            >
-              <View style={{ flex: 1 }}>
-                <Text style={styles.quoteClient}>{q.client_name}</Text>
-                <Text style={styles.quoteType}>{q.type}</Text>
-                <Text style={styles.quoteDate}>{new Date(q.created_at).toLocaleDateString("en-GB")}</Text>
-              </View>
-              <View style={{ alignItems: "flex-end", gap: 6 }}>
-                <Text style={styles.quoteTotal}>£{q.total?.toFixed(2) ?? "0.00"}</Text>
-                <StatusBadge status={q.status} />
-                <TouchableOpacity onPress={() => deleteQuote(q.id)} activeOpacity={0.7}>
-                  <Ionicons name="trash-outline" size={16} color={P.error} />
-                </TouchableOpacity>
-              </View>
-            </TouchableOpacity>
-          ))
-        )}
-      </ScrollView>
-      <TouchableOpacity style={styles.newBtn} onPress={resetForm} activeOpacity={0.8}>
-        <Ionicons name="add-circle-outline" size={16} color="#FFFFFF" />
-        <Text style={styles.newBtnText}>New Quote</Text>
-      </TouchableOpacity>
+
+      {loadError && (
+        <View style={styles.errorBanner}>
+          <Text style={styles.errorBannerText}>Failed to load quotes. </Text>
+          <TouchableOpacity onPress={load}><Text style={styles.retryText}>Retry</Text></TouchableOpacity>
+        </View>
+      )}
+
+      {quotes.length === 0 && !loadError ? (
+        <Text style={styles.emptyText}>No quotes yet. Use the form to create one.</Text>
+      ) : (
+        quotes.map((q) => (
+          <TouchableOpacity
+            key={q.id}
+            style={[styles.quoteRow, selectedId === q.id && styles.quoteRowActive]}
+            onPress={() => selectedId === q.id ? resetForm() : loadQuoteIntoForm(q)}
+            activeOpacity={0.7}
+          >
+            <View style={{ flex: 1 }}>
+              <Text style={styles.quoteClient}>{q.client_name}</Text>
+              <Text style={styles.quoteType}>{q.project_type}</Text>
+              <Text style={styles.quoteDate}>{new Date(q.created_at).toLocaleDateString("en-GB")}</Text>
+            </View>
+            <View style={{ alignItems: "flex-end", gap: 6 }}>
+              <Text style={styles.quoteTotal}>£{q.total?.toFixed(2) ?? "0.00"}</Text>
+              <StatusBadge status={q.status} />
+              <TouchableOpacity onPress={() => deleteQuote(q.id)} activeOpacity={0.7}>
+                <Ionicons name="trash-outline" size={16} color={P.error} />
+              </TouchableOpacity>
+            </View>
+          </TouchableOpacity>
+        ))
+      )}
     </View>
   );
 
   const Builder = (
     <ScrollView style={[styles.panel, styles.panelRight]} contentContainerStyle={styles.builderContent}>
-      <Text style={styles.panelTitle}>{selectedId ? "Edit Quote" : "New Quote"}</Text>
+      <View style={styles.builderHeader}>
+        <Text style={styles.panelTitle}>{selectedId ? "Edit Quote" : "New Quote"}</Text>
+        {selectedId ? (
+          <TouchableOpacity onPress={resetForm} style={styles.clearBtn}>
+            <Text style={styles.clearBtnText}>+ New</Text>
+          </TouchableOpacity>
+        ) : null}
+      </View>
 
-      <Text style={styles.fieldLabel}>Client Name</Text>
+      <Text style={styles.fieldLabel}>Client Name *</Text>
       <TextInput
         style={styles.input} value={clientName} onChangeText={setClientName}
         placeholder="e.g. John Smith" placeholderTextColor={P.muted}
@@ -188,8 +213,8 @@ export default function Quotes() {
 
       <Text style={styles.fieldLabel}>Project Type</Text>
       <TextInput
-        style={styles.input} value={type} onChangeText={setType}
-        placeholder="e.g. Block Paving" placeholderTextColor={P.muted}
+        style={styles.input} value={projectType} onChangeText={setProjectType}
+        placeholder="e.g. Block Paving Driveway" placeholderTextColor={P.muted}
       />
 
       <Text style={styles.fieldLabel}>Line Items</Text>
@@ -218,12 +243,14 @@ export default function Quotes() {
             placeholderTextColor={P.muted}
             keyboardType="numeric"
           />
-          <TouchableOpacity
-            onPress={() => setLineItems((prev) => prev.filter((_, idx) => idx !== i))}
-            style={styles.removeLineBtn}
-          >
-            <Ionicons name="close-circle-outline" size={20} color={P.error} />
-          </TouchableOpacity>
+          {lineItems.length > 1 && (
+            <TouchableOpacity
+              onPress={() => setLineItems((prev) => prev.filter((_, idx) => idx !== i))}
+              style={styles.removeLineBtn}
+            >
+              <Ionicons name="close-circle-outline" size={20} color={P.error} />
+            </TouchableOpacity>
+          )}
         </View>
       ))}
 
@@ -243,14 +270,13 @@ export default function Quotes() {
         keyboardType="numeric" placeholderTextColor={P.muted}
       />
 
-      {/* Totals */}
       <View style={styles.totals}>
         <View style={styles.totalRow}>
           <Text style={styles.totalLabel}>Subtotal</Text>
           <Text style={styles.totalValue}>£{subtotal.toFixed(2)}</Text>
         </View>
         <View style={styles.totalRow}>
-          <Text style={styles.totalLabel}>Tax ({taxPercent}%)</Text>
+          <Text style={styles.totalLabel}>Tax ({taxPercent || 0}%)</Text>
           <Text style={styles.totalValue}>£{tax.toFixed(2)}</Text>
         </View>
         <View style={[styles.totalRow, styles.totalRowFinal]}>
@@ -259,7 +285,6 @@ export default function Quotes() {
         </View>
       </View>
 
-      {/* Buttons */}
       <View style={styles.saveRow}>
         <TouchableOpacity
           style={[styles.saveBtn, styles.saveBtnDraft, saving && styles.btnDisabled]}
@@ -267,7 +292,9 @@ export default function Quotes() {
           disabled={saving}
           activeOpacity={0.8}
         >
-          {saving ? <ActivityIndicator size="small" color={P.copper} /> : (
+          {saving ? (
+            <ActivityIndicator size="small" color={P.copper} />
+          ) : (
             <Text style={[styles.saveBtnText, { color: P.copper }]}>Save Draft</Text>
           )}
         </TouchableOpacity>
@@ -277,7 +304,11 @@ export default function Quotes() {
           disabled={saving}
           activeOpacity={0.8}
         >
-          <Text style={[styles.saveBtnText, { color: "#FFFFFF" }]}>Send Quote</Text>
+          {saving ? (
+            <ActivityIndicator size="small" color="#FFFFFF" />
+          ) : (
+            <Text style={[styles.saveBtnText, { color: "#FFFFFF" }]}>Send Quote</Text>
+          )}
         </TouchableOpacity>
       </View>
     </ScrollView>
@@ -287,7 +318,6 @@ export default function Quotes() {
     <View style={[styles.root, !isDesktop && { flexDirection: "column" }]}>
       <AdminSidebar activeRoute="/admin/quotes" />
       <View style={styles.main}>
-        {/* Top bar */}
         <View style={styles.topBar}>
           <Text style={styles.pageTitle}>Quotes Manager</Text>
           <View style={styles.topRight}>
@@ -326,6 +356,18 @@ const styles = StyleSheet.create({
   panelLeft: { maxWidth: 360, borderRightWidth: 1, borderRightColor: P.border, backgroundColor: "#FAFAF8", flex: 1 },
   panelRight: { flex: 1 },
   panelTitle: { fontSize: 16, fontWeight: "700", color: P.ink, marginBottom: 14 },
+  builderHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 14 },
+  clearBtn: {
+    paddingVertical: 5, paddingHorizontal: 12, borderRadius: 20,
+    backgroundColor: P.copper,
+  },
+  clearBtnText: { color: "#FFFFFF", fontSize: 12, fontWeight: "700" },
+  errorBanner: {
+    flexDirection: "row", alignItems: "center", backgroundColor: "#FEF2F2",
+    borderRadius: 8, padding: 10, marginBottom: 12, borderWidth: 1, borderColor: "#FECACA",
+  },
+  errorBannerText: { fontSize: 13, color: P.error },
+  retryText: { fontSize: 13, color: P.copper, fontWeight: "700" },
   quoteRow: {
     flexDirection: "row", backgroundColor: "#FFFFFF", borderRadius: 10,
     padding: 14, marginBottom: 8, borderWidth: 1, borderColor: P.border,
@@ -335,12 +377,6 @@ const styles = StyleSheet.create({
   quoteType: { fontSize: 12, color: P.muted, marginTop: 2 },
   quoteDate: { fontSize: 11, color: P.muted, marginTop: 4 },
   quoteTotal: { fontSize: 15, fontWeight: "700", color: P.ink },
-  newBtn: {
-    flexDirection: "row", alignItems: "center", gap: 6,
-    backgroundColor: P.copper, borderRadius: 10, padding: 12,
-    justifyContent: "center", marginTop: 12,
-  },
-  newBtnText: { color: "#FFFFFF", fontWeight: "700", fontSize: 14 },
   builderContent: { paddingBottom: 40 },
   fieldLabel: { fontSize: 13, fontWeight: "600", color: P.ink, marginBottom: 6, marginTop: 12 },
   input: {
@@ -366,15 +402,13 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: P.border, padding: 14, gap: 8,
   },
   totalRow: { flexDirection: "row", justifyContent: "space-between" },
-  totalRowFinal: {
-    borderTopWidth: 1, borderTopColor: P.border, paddingTop: 8, marginTop: 4,
-  },
+  totalRowFinal: { borderTopWidth: 1, borderTopColor: P.border, paddingTop: 8, marginTop: 4 },
   totalLabel: { fontSize: 13, color: P.muted },
   totalValue: { fontSize: 13, color: P.ink, fontWeight: "600" },
   totalLabelFinal: { fontSize: 15, fontWeight: "700", color: P.ink },
   totalValueFinal: { fontSize: 15, fontWeight: "800", color: P.copper },
   saveRow: { flexDirection: "row", gap: 10, marginTop: 16 },
-  saveBtn: { flex: 1, borderRadius: 10, paddingVertical: 12, alignItems: "center" },
+  saveBtn: { flex: 1, borderRadius: 10, paddingVertical: 12, alignItems: "center", justifyContent: "center" },
   saveBtnDraft: { backgroundColor: "#FFFFFF", borderWidth: 1.5, borderColor: P.copper },
   saveBtnSend: { backgroundColor: P.copper },
   saveBtnText: { fontSize: 14, fontWeight: "700" },

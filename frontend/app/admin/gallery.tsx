@@ -40,6 +40,7 @@ export default function Gallery() {
 
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [fetching, setFetching] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [caption, setCaption] = useState("");
   const [preview, setPreview] = useState<string | null>(null);
   const [selectedBase64, setSelectedBase64] = useState<string | null>(null);
@@ -51,10 +52,13 @@ export default function Gallery() {
   }, [user, loading]);
 
   const load = useCallback(async () => {
+    setLoadError(false);
     try {
       const data = await api.get("/photos");
       setPhotos(data || []);
-    } catch {}
+    } catch {
+      setLoadError(true);
+    }
     setFetching(false);
   }, []);
 
@@ -81,6 +85,7 @@ export default function Gallery() {
       setSelectedBase64(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
       await load();
+      Alert.alert("Uploaded", "Photo added to gallery.");
     } catch (e: any) {
       Alert.alert("Upload failed", e.message || "Could not upload photo.");
     }
@@ -100,7 +105,9 @@ export default function Gallery() {
             try {
               await api.del(`/photos/${id}`);
               setPhotos((prev) => prev.filter((p) => p.id !== id));
-            } catch {}
+            } catch {
+              Alert.alert("Error", "Could not delete photo.");
+            }
             setDeletingId(null);
           },
         },
@@ -184,7 +191,14 @@ export default function Gallery() {
           {/* Photo grid */}
           <Text style={styles.sectionTitle}>Gallery ({photos.length} photos)</Text>
 
-          {photos.length === 0 ? (
+          {loadError && (
+            <View style={styles.errorBanner}>
+              <Text style={styles.errorBannerText}>Could not load photos. </Text>
+              <TouchableOpacity onPress={load}><Text style={styles.retryText}>Retry</Text></TouchableOpacity>
+            </View>
+          )}
+
+          {photos.length === 0 && !loadError ? (
             <View style={styles.emptyCard}>
               <Ionicons name="images-outline" size={40} color={P.muted} />
               <Text style={styles.emptyText}>No photos uploaded yet.</Text>
@@ -194,7 +208,7 @@ export default function Gallery() {
               {photos.map((photo) => (
                 <View key={photo.id} style={[styles.photoCard, { width: `${(100 / cols) - 2}%` as any }]}>
                   <Image
-                    source={{ uri: `data:image/jpeg;base64,${photo.image_base64}` }}
+                    source={{ uri: `data:image/jpeg;base64,${photo.image_base64 || (photo as any).image}` }}
                     style={styles.photoImage}
                     resizeMode="cover"
                   />
@@ -264,6 +278,12 @@ const styles = StyleSheet.create({
   },
   uploadBtnText: { color: "#FFFFFF", fontSize: 14, fontWeight: "700" },
   btnDisabled: { opacity: 0.5 },
+  errorBanner: {
+    flexDirection: "row" as any, alignItems: "center" as any, backgroundColor: "#FEF2F2",
+    borderRadius: 8, padding: 10, marginBottom: 12, borderWidth: 1, borderColor: "#FECACA",
+  },
+  errorBannerText: { fontSize: 13, color: "#DC2626" },
+  retryText: { fontSize: 13, color: P.copper, fontWeight: "700" as any },
   emptyCard: {
     backgroundColor: "#FFFFFF", borderRadius: 12, padding: 32,
     alignItems: "center", borderWidth: 1, borderColor: P.border, gap: 10,

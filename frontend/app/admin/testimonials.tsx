@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
   TextInput, ActivityIndicator, Alert, useWindowDimensions,
@@ -6,7 +6,7 @@ import {
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "@/src/context/AuthContext";
-import { TESTIMONIALS } from "@/src/brand";
+import { api } from "@/src/api";
 import AdminSidebar from "@/src/components/AdminSidebar";
 
 const P = {
@@ -52,12 +52,12 @@ export default function Testimonials() {
   const { width } = useWindowDimensions();
   const isDesktop = width >= 768;
 
-  // Load initial data from brand.ts
-  const [items, setItems] = useState<Testimonial[]>(
-    TESTIMONIALS.map((t, i) => ({ ...t, id: `brand-${i}` }))
-  );
+  const [items, setItems] = useState<Testimonial[]>([]);
+  const [fetching, setFetching] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  // Form state
   const [name, setName] = useState("");
   const [town, setTown] = useState("");
   const [job, setJob] = useState("");
@@ -69,99 +69,67 @@ export default function Testimonials() {
     if (!loading && !user) router.replace("/admin");
   }, [user, loading]);
 
-  const addTestimonial = () => {
+  const load = useCallback(async () => {
+    setLoadError(false);
+    try {
+      const data = await api.get("/testimonials");
+      setItems(data || []);
+    } catch {
+      setLoadError(true);
+    }
+    setFetching(false);
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  const addTestimonial = async () => {
     if (!name.trim() || !text.trim()) {
       setFormError("Name and review text are required.");
       return;
     }
     setFormError("");
-    const newItem: Testimonial = {
-      id: `local-${Date.now()}`,
-      name: name.trim(),
-      town: town.trim(),
-      job: job.trim(),
-      stars,
-      text: text.trim(),
-    };
-    setItems((prev) => [newItem, ...prev]);
-    setName(""); setTown(""); setJob(""); setStars(5); setText("");
+    setSaving(true);
+    try {
+      const newItem = await api.post("/testimonials", {
+        name: name.trim(), town: town.trim(), job: job.trim(), stars, text: text.trim(),
+      });
+      setItems((prev) => [newItem, ...prev]);
+      setName(""); setTown(""); setJob(""); setStars(5); setText("");
+      Alert.alert("Saved", "Testimonial added successfully.");
+    } catch (e: any) {
+      Alert.alert("Error", e.message || "Could not save testimonial.");
+    }
+    setSaving(false);
   };
 
   const deleteItem = (id: string) => {
-    Alert.alert("Delete Testimonial", "Remove this testimonial from the local list?", [
+    Alert.alert("Delete Testimonial", "Are you sure?", [
       { text: "Cancel", style: "cancel" },
       {
         text: "Delete", style: "destructive",
-        onPress: () => setItems((prev) => prev.filter((t) => t.id !== id)),
+        onPress: async () => {
+          setDeletingId(id);
+          try {
+            await api.del(`/testimonials/${id}`);
+            setItems((prev) => prev.filter((t) => t.id !== id));
+          } catch {
+            Alert.alert("Error", "Could not delete testimonial.");
+          }
+          setDeletingId(null);
+        },
       },
     ]);
   };
 
-  if (loading) {
+  if (loading || fetching) {
     return <View style={styles.center}><ActivityIndicator size="large" color={P.copper} /></View>;
   }
-
-  const Form = (
-    <View style={styles.formCard}>
-      <Text style={styles.formTitle}>Add New Testimonial</Text>
-
-      {formError ? <Text style={styles.errorText}>{formError}</Text> : null}
-
-      <View style={isDesktop ? styles.rowTwo : undefined}>
-        <View style={[styles.field, isDesktop && { flex: 1 }]}>
-          <Text style={styles.fieldLabel}>Customer Name *</Text>
-          <TextInput
-            style={styles.input} value={name} onChangeText={setName}
-            placeholder="e.g. Sarah K." placeholderTextColor={P.muted}
-          />
-        </View>
-        <View style={[styles.field, isDesktop && { flex: 1 }]}>
-          <Text style={styles.fieldLabel}>Town</Text>
-          <TextInput
-            style={styles.input} value={town} onChangeText={setTown}
-            placeholder="e.g. Chelmsford" placeholderTextColor={P.muted}
-          />
-        </View>
-      </View>
-
-      <View style={styles.field}>
-        <Text style={styles.fieldLabel}>Job / Service</Text>
-        <TextInput
-          style={styles.input} value={job} onChangeText={setJob}
-          placeholder="e.g. Block Paving Driveway" placeholderTextColor={P.muted}
-        />
-      </View>
-
-      <View style={styles.field}>
-        <Text style={styles.fieldLabel}>Star Rating</Text>
-        <StarPicker value={stars} onChange={setStars} />
-      </View>
-
-      <View style={styles.field}>
-        <Text style={styles.fieldLabel}>Review Text *</Text>
-        <TextInput
-          style={[styles.input, styles.textArea]}
-          value={text} onChangeText={setText}
-          placeholder="Customer's review..."
-          placeholderTextColor={P.muted}
-          multiline numberOfLines={4}
-          textAlignVertical="top"
-        />
-      </View>
-
-      <TouchableOpacity style={styles.addBtn} onPress={addTestimonial} activeOpacity={0.8}>
-        <Ionicons name="add-circle-outline" size={18} color="#FFFFFF" />
-        <Text style={styles.addBtnText}>Add Testimonial</Text>
-      </TouchableOpacity>
-    </View>
-  );
 
   return (
     <View style={[styles.root, !isDesktop && { flexDirection: "column" }]}>
       <AdminSidebar activeRoute="/admin/testimonials" />
 
       <View style={styles.main}>
-        {/* Top bar */}
         <View style={styles.topBar}>
           <Text style={styles.pageTitle}>Testimonials</Text>
           <View style={styles.topRight}>
@@ -173,23 +141,84 @@ export default function Testimonials() {
         </View>
 
         <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
-          {/* Note banner */}
-          <View style={styles.noteBanner}>
-            <Ionicons name="information-circle-outline" size={18} color={P.copper} />
-            <Text style={styles.noteText}>
-              Changes here are local only — ask your developer to save them permanently to brand.ts.
-            </Text>
-          </View>
+          {/* Add form */}
+          <View style={styles.formCard}>
+            <Text style={styles.formTitle}>Add New Testimonial</Text>
 
-          {/* Form */}
-          {Form}
+            {formError ? <Text style={styles.errorText}>{formError}</Text> : null}
+
+            <View style={isDesktop ? styles.rowTwo : undefined}>
+              <View style={[styles.field, isDesktop && { flex: 1 }]}>
+                <Text style={styles.fieldLabel}>Customer Name *</Text>
+                <TextInput
+                  style={styles.input} value={name} onChangeText={setName}
+                  placeholder="e.g. Sarah K." placeholderTextColor={P.muted}
+                />
+              </View>
+              <View style={[styles.field, isDesktop && { flex: 1 }]}>
+                <Text style={styles.fieldLabel}>Town</Text>
+                <TextInput
+                  style={styles.input} value={town} onChangeText={setTown}
+                  placeholder="e.g. Chelmsford" placeholderTextColor={P.muted}
+                />
+              </View>
+            </View>
+
+            <View style={styles.field}>
+              <Text style={styles.fieldLabel}>Job / Service</Text>
+              <TextInput
+                style={styles.input} value={job} onChangeText={setJob}
+                placeholder="e.g. Block Paving Driveway" placeholderTextColor={P.muted}
+              />
+            </View>
+
+            <View style={styles.field}>
+              <Text style={styles.fieldLabel}>Star Rating</Text>
+              <StarPicker value={stars} onChange={setStars} />
+            </View>
+
+            <View style={styles.field}>
+              <Text style={styles.fieldLabel}>Review Text *</Text>
+              <TextInput
+                style={[styles.input, styles.textArea]}
+                value={text} onChangeText={setText}
+                placeholder="Customer's review..."
+                placeholderTextColor={P.muted}
+                multiline numberOfLines={4}
+                textAlignVertical="top"
+              />
+            </View>
+
+            <TouchableOpacity
+              style={[styles.addBtn, saving && styles.btnDisabled]}
+              onPress={addTestimonial}
+              disabled={saving}
+              activeOpacity={0.8}
+            >
+              {saving ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <>
+                  <Ionicons name="add-circle-outline" size={18} color="#FFFFFF" />
+                  <Text style={styles.addBtnText}>Add Testimonial</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          </View>
 
           {/* List */}
           <Text style={styles.sectionTitle}>Testimonials ({items.length})</Text>
 
-          {items.length === 0 ? (
+          {loadError && (
+            <View style={styles.errorBanner}>
+              <Text style={styles.errorBannerText}>Could not load testimonials. </Text>
+              <TouchableOpacity onPress={load}><Text style={styles.retryText}>Retry</Text></TouchableOpacity>
+            </View>
+          )}
+
+          {items.length === 0 && !loadError ? (
             <View style={styles.emptyCard}>
-              <Text style={styles.emptyText}>No testimonials yet.</Text>
+              <Text style={styles.emptyText}>No testimonials yet. Add one above.</Text>
             </View>
           ) : (
             <View style={isDesktop ? styles.cardGrid : undefined}>
@@ -207,18 +236,18 @@ export default function Testimonials() {
                     <TouchableOpacity
                       style={styles.deleteBtn}
                       onPress={() => deleteItem(t.id)}
+                      disabled={deletingId === t.id}
                       activeOpacity={0.7}
                     >
-                      <Ionicons name="trash-outline" size={18} color={P.error} />
+                      {deletingId === t.id ? (
+                        <ActivityIndicator size="small" color={P.error} />
+                      ) : (
+                        <Ionicons name="trash-outline" size={18} color={P.error} />
+                      )}
                     </TouchableOpacity>
                   </View>
                   <StarDisplay stars={t.stars} />
                   <Text style={styles.testimonialText}>"{t.text}"</Text>
-                  {t.id.startsWith("brand-") && (
-                    <View style={styles.sourceBadge}>
-                      <Text style={styles.sourceBadgeText}>From website</Text>
-                    </View>
-                  )}
                 </View>
               ))}
             </View>
@@ -244,12 +273,6 @@ const styles = StyleSheet.create({
   iconBtn: { padding: 8 },
   scroll: { flex: 1 },
   scrollContent: { padding: 20, paddingBottom: 40 },
-  noteBanner: {
-    flexDirection: "row", alignItems: "center", gap: 10,
-    backgroundColor: "#FEF3C7", borderRadius: 10, padding: 12,
-    borderWidth: 1, borderColor: "#FDE68A", marginBottom: 20,
-  },
-  noteText: { flex: 1, fontSize: 13, color: "#92400E", lineHeight: 18 },
   formCard: {
     backgroundColor: "#FFFFFF", borderRadius: 14, padding: 20,
     borderWidth: 1, borderColor: P.border, marginBottom: 24,
@@ -277,7 +300,14 @@ const styles = StyleSheet.create({
     justifyContent: "center", marginTop: 4,
   },
   addBtnText: { color: "#FFFFFF", fontSize: 14, fontWeight: "700" },
+  btnDisabled: { opacity: 0.6 },
   sectionTitle: { fontSize: 16, fontWeight: "700", color: P.ink, marginBottom: 14 },
+  errorBanner: {
+    flexDirection: "row", alignItems: "center", backgroundColor: "#FEF2F2",
+    borderRadius: 8, padding: 10, marginBottom: 12, borderWidth: 1, borderColor: "#FECACA",
+  },
+  errorBannerText: { fontSize: 13, color: P.error },
+  retryText: { fontSize: 13, color: P.copper, fontWeight: "700" },
   emptyCard: {
     backgroundColor: "#FFFFFF", borderRadius: 12, padding: 32,
     alignItems: "center", borderWidth: 1, borderColor: P.border,
@@ -296,13 +326,6 @@ const styles = StyleSheet.create({
   testimonialMeta: { fontSize: 12, color: P.muted, marginTop: 2 },
   deleteBtn: { padding: 4 },
   testimonialText: {
-    fontSize: 13, color: "#4A443D", lineHeight: 20, marginTop: 8,
-    fontStyle: "italic",
+    fontSize: 13, color: "#4A443D", lineHeight: 20, marginTop: 8, fontStyle: "italic",
   },
-  sourceBadge: {
-    marginTop: 10, alignSelf: "flex-start",
-    backgroundColor: "#F3F4F6", borderRadius: 20,
-    paddingHorizontal: 8, paddingVertical: 3,
-  },
-  sourceBadgeText: { fontSize: 10, color: P.muted, fontWeight: "600" },
 });

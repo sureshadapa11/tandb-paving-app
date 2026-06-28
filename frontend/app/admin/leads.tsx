@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from "react";
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
-  TextInput, ActivityIndicator, RefreshControl, Linking, useWindowDimensions,
+  TextInput, ActivityIndicator, Alert, RefreshControl, Linking, useWindowDimensions,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -64,11 +64,16 @@ export default function Leads() {
     if (!loading && !user) router.replace("/admin");
   }, [user, loading]);
 
+  const [loadError, setLoadError] = useState(false);
+
   const load = useCallback(async () => {
+    setLoadError(false);
     try {
       const data = await api.get("/enquiries");
       setEnquiries(data || []);
-    } catch {}
+    } catch {
+      setLoadError(true);
+    }
     setFetching(false);
     setRefreshing(false);
   }, []);
@@ -78,11 +83,16 @@ export default function Leads() {
   const onRefresh = () => { setRefreshing(true); load(); };
 
   const updateStatus = async (id: number, status: string) => {
+    const prev = enquiries.find((e) => e.id === id)?.status;
     setUpdating(id);
+    setEnquiries((list) => list.map((e) => e.id === id ? { ...e, status } : e));
     try {
       await api.put(`/enquiries/${id}/status?status=${status}`);
-      setEnquiries((prev) => prev.map((e) => e.id === id ? { ...e, status } : e));
-    } catch {}
+    } catch {
+      // Rollback on failure
+      setEnquiries((list) => list.map((e) => e.id === id ? { ...e, status: prev ?? e.status } : e));
+      Alert.alert("Error", "Could not update status. Please try again.");
+    }
     setUpdating(null);
   };
 
