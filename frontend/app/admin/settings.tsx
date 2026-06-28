@@ -8,7 +8,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "@/src/context/AuthContext";
 import { api } from "@/src/api";
 import AdminSidebar from "@/src/components/AdminSidebar";
-import { BIZ, FAQS } from "@/src/brand";
+import { BIZ, FAQS, SERVICES, AREAS, STATS } from "@/src/brand";
 
 const P = {
   bg: "#F7F4F0", card: "#FFFFFF", navy: "#1A2A3A", copper: "#B5651D",
@@ -16,9 +16,11 @@ const P = {
   error: "#DC2626", success: "#2D7A4F",
 };
 
-type Tab = "biz" | "faqs" | "hero";
+type Tab = "biz" | "faqs" | "hero" | "services" | "areas" | "stats";
 type FAQ = { q: string; a: string };
 type HeroSlide = { headline: string; sub: string };
+type Service = { id: string; title: string; desc: string };
+type Stat = { value: string; label: string };
 
 const DEFAULT_SLIDES: HeroSlide[] = [
   { headline: "Professional Groundworks &\nExpert Installation", sub: "From first call to finished driveway — straightforward, transparent and stress-free." },
@@ -61,6 +63,18 @@ export default function Settings() {
   // Hero slides
   const [slides, setSlides] = useState<HeroSlide[]>(DEFAULT_SLIDES);
 
+  // Services
+  const [services, setServices] = useState<Service[]>(
+    SERVICES.map(s => ({ id: s.id, title: s.title, desc: s.desc }))
+  );
+
+  // Areas
+  const [areas, setAreas] = useState<string[]>([...AREAS]);
+  const [newArea, setNewArea] = useState("");
+
+  // Stats
+  const [stats, setStats] = useState<Stat[]>(STATS.map(s => ({ value: s.value, label: s.label })));
+
   useEffect(() => {
     if (!loading && !user) router.replace("/admin");
   }, [user, loading]);
@@ -81,6 +95,9 @@ export default function Settings() {
         if (data.area) setArea(data.area);
         if (data.faqs?.length) setFaqs(data.faqs);
         if (data.hero_slides?.length) setSlides(data.hero_slides);
+        if (data.services?.length) setServices(data.services);
+        if (data.areas?.length) setAreas(data.areas);
+        if (data.stats?.length) setStats(data.stats);
       }
     } catch {}
     setFetching(false);
@@ -95,6 +112,7 @@ export default function Settings() {
         biz_name: bizName, tagline, since, headline, intro,
         phone, mobile, email, hours, area,
         faqs, hero_slides: slides,
+        services, areas, stats,
       });
       setSavedTab(which);
       setTimeout(() => setSavedTab(null), 2500);
@@ -145,10 +163,29 @@ export default function Settings() {
     return <View style={styles.center}><ActivityIndicator size="large" color={P.copper} /></View>;
   }
 
+  const updateService = (i: number, field: keyof Service, val: string) =>
+    setServices(prev => prev.map((s, idx) => idx === i ? { ...s, [field]: val } : s));
+
+  const addArea = () => {
+    const v = newArea.trim();
+    if (!v || areas.includes(v)) return;
+    setAreas(prev => [...prev, v]);
+    setNewArea("");
+  };
+
+  const removeArea = (i: number) =>
+    setAreas(prev => prev.filter((_, idx) => idx !== i));
+
+  const updateStat = (i: number, field: keyof Stat, val: string) =>
+    setStats(prev => prev.map((s, idx) => idx === i ? { ...s, [field]: val } : s));
+
   const TABS: { key: Tab; label: string; icon: any }[] = [
-    { key: "biz", label: "Business Info", icon: "business-outline" },
-    { key: "faqs", label: "FAQs", icon: "help-circle-outline" },
-    { key: "hero", label: "Hero Text", icon: "image-outline" },
+    { key: "biz",      label: "Business Info", icon: "business-outline" },
+    { key: "faqs",     label: "FAQs",          icon: "help-circle-outline" },
+    { key: "hero",     label: "Hero Text",     icon: "image-outline" },
+    { key: "services", label: "Services",      icon: "construct-outline" },
+    { key: "areas",    label: "Areas",         icon: "location-outline" },
+    { key: "stats",    label: "Stats",         icon: "bar-chart-outline" },
   ];
 
   const SaveBar = ({ which }: { which: Tab }) => (
@@ -436,6 +473,122 @@ export default function Settings() {
             </View>
           )}
 
+          {/* ── SERVICES ── */}
+          {tab === "services" && (
+            <View>
+              <View style={styles.infoBox}>
+                <Ionicons name="information-circle-outline" size={16} color={P.copper} />
+                <Text style={styles.infoText}>Edit the name and description of each service. Icons and images stay the same.</Text>
+              </View>
+
+              {services.map((svc, i) => (
+                <View key={svc.id} style={styles.card}>
+                  <View style={styles.slideHeader}>
+                    <View style={styles.slideBadge}>
+                      <Text style={styles.slideBadgeText}>{i + 1}</Text>
+                    </View>
+                    <Text style={styles.slidePreview} numberOfLines={1}>{svc.title}</Text>
+                  </View>
+                  <View style={styles.field}>
+                    <Text style={styles.label}>Service Name</Text>
+                    <TextInput
+                      style={styles.input} value={svc.title}
+                      onChangeText={(v) => updateService(i, "title", v)}
+                      placeholderTextColor={P.muted}
+                    />
+                  </View>
+                  <View style={styles.field}>
+                    <Text style={styles.label}>Short Description</Text>
+                    <TextInput
+                      style={[styles.input, styles.textarea]} value={svc.desc}
+                      onChangeText={(v) => updateService(i, "desc", v)}
+                      multiline numberOfLines={2} textAlignVertical="top"
+                      placeholderTextColor={P.muted}
+                    />
+                  </View>
+                </View>
+              ))}
+
+              <SaveBar which="services" />
+            </View>
+          )}
+
+          {/* ── AREAS ── */}
+          {tab === "areas" && (
+            <View>
+              <View style={styles.infoBox}>
+                <Ionicons name="information-circle-outline" size={16} color={P.copper} />
+                <Text style={styles.infoText}>Add or remove towns and areas you cover. Tap × to remove.</Text>
+              </View>
+
+              <View style={styles.card}>
+                <Text style={styles.cardTitle}>Coverage Towns</Text>
+                <View style={styles.areaGrid}>
+                  {areas.map((a, i) => (
+                    <View key={i} style={styles.areaChip}>
+                      <Text style={styles.areaChipText}>{a}</Text>
+                      <TouchableOpacity onPress={() => removeArea(i)} style={styles.areaChipRemove} activeOpacity={0.7}>
+                        <Ionicons name="close" size={13} color={P.muted} />
+                      </TouchableOpacity>
+                    </View>
+                  ))}
+                </View>
+
+                <View style={styles.addAreaRow}>
+                  <TextInput
+                    style={[styles.input, { flex: 1 }]}
+                    value={newArea} onChangeText={setNewArea}
+                    placeholder="Add a town…" placeholderTextColor={P.muted}
+                    onSubmitEditing={addArea} returnKeyType="done"
+                  />
+                  <TouchableOpacity style={styles.addAreaBtn} onPress={addArea} activeOpacity={0.8}>
+                    <Ionicons name="add" size={20} color="#FFFFFF" />
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              <SaveBar which="areas" />
+            </View>
+          )}
+
+          {/* ── STATS ── */}
+          {tab === "stats" && (
+            <View>
+              <View style={styles.infoBox}>
+                <Ionicons name="information-circle-outline" size={16} color={P.copper} />
+                <Text style={styles.infoText}>Update the 4 headline numbers shown in the stats bar on the homepage.</Text>
+              </View>
+
+              <View style={styles.card}>
+                <Text style={styles.cardTitle}>Homepage Stats</Text>
+                {stats.map((st, i) => (
+                  <View key={i} style={[styles.row2, { marginBottom: 12 }]}>
+                    <View style={[styles.field, { flex: 0.4, marginBottom: 0 }]}>
+                      <Text style={styles.label}>Value</Text>
+                      <TextInput
+                        style={styles.input} value={st.value}
+                        onChangeText={(v) => updateStat(i, "value", v)}
+                        placeholder="e.g. 15+"
+                        placeholderTextColor={P.muted}
+                      />
+                    </View>
+                    <View style={[styles.field, { flex: 1, marginBottom: 0 }]}>
+                      <Text style={styles.label}>Label</Text>
+                      <TextInput
+                        style={styles.input} value={st.label}
+                        onChangeText={(v) => updateStat(i, "label", v)}
+                        placeholder="e.g. Years Trading"
+                        placeholderTextColor={P.muted}
+                      />
+                    </View>
+                  </View>
+                ))}
+              </View>
+
+              <SaveBar which="stats" />
+            </View>
+          )}
+
         </ScrollView>
       </View>
     </View>
@@ -544,4 +697,17 @@ const styles = StyleSheet.create({
   },
   slideBadgeText: { color: "#FFFFFF", fontSize: 11, fontWeight: "800" },
   slidePreview: { flex: 1, fontSize: 13, color: P.muted, fontStyle: "italic" },
+  areaGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 16 },
+  areaChip: {
+    flexDirection: "row", alignItems: "center", gap: 6,
+    backgroundColor: "#F0EBE4", borderRadius: 20, borderWidth: 1, borderColor: P.border,
+    paddingVertical: 6, paddingHorizontal: 12,
+  },
+  areaChipText: { fontSize: 13, fontWeight: "600", color: P.ink },
+  areaChipRemove: { padding: 2 },
+  addAreaRow: { flexDirection: "row", gap: 10, alignItems: "center" },
+  addAreaBtn: {
+    width: 42, height: 42, borderRadius: 10,
+    backgroundColor: P.copper, alignItems: "center", justifyContent: "center",
+  },
 });

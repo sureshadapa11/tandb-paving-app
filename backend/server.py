@@ -185,6 +185,9 @@ class SiteSettingsBody(BaseModel):
     area: str = "Essex & Suffolk"
     hero_slides: List[dict] = []
     faqs: List[dict] = []
+    services: List[dict] = []
+    areas: List[str] = []
+    stats: List[dict] = []
 
 
 class ChatBody(BaseModel):

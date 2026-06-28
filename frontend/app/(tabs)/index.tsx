@@ -83,6 +83,16 @@ export default function Home() {
 
   const faqs = (settings?.faqs?.length) ? settings.faqs : FAQS;
 
+  const stats = (settings?.stats?.length) ? settings.stats : STATS;
+
+  const areas = (settings?.areas?.length) ? settings.areas : AREAS;
+
+  const services = SERVICES.map((s, i) => ({
+    ...s,
+    title: settings?.services?.[i]?.title || s.title,
+    desc: settings?.services?.[i]?.desc || s.desc,
+  }));
+
   const slides = SLIDES.map((s, i) => ({
     ...s,
     headline: settings?.hero_slides?.[i]?.headline || s.headline,
@@ -252,13 +262,13 @@ export default function Home() {
       {/* ── STATS ── */}
       <View style={styles.statsBar}>
         <MaxWidth style={styles.statsRow}>
-          {STATS.map((s, i) => (
+          {stats.map((s, i) => (
             <React.Fragment key={s.label}>
               <View style={styles.stat}>
                 <Text style={styles.statVal}>{s.value}</Text>
                 <Text style={styles.statLabel}>{s.label}</Text>
               </View>
-              {i < STATS.length - 1 && <View style={styles.statDivider} />}
+              {i < stats.length - 1 && <View style={styles.statDivider} />}
             </React.Fragment>
           ))}
         </MaxWidth>
@@ -290,7 +300,7 @@ export default function Home() {
             styles.svGrid,
             isDesktop ? { marginTop: S.lg } : { marginTop: S.md },
           ]}>
-            {SERVICES.map((sv) => (
+            {services.map((sv) => (
               <View
                 key={sv.id}
                 testID={`home-service-${sv.id}`}
@@ -496,7 +506,7 @@ export default function Home() {
             Proudly serving {biz.area}. Call us to confirm your postcode.
           </Text>
           <View style={styles.areaGrid}>
-            {AREAS.map((a) => (
+            {areas.map((a) => (
               <View key={a} style={styles.areaChip}>
                 <Ionicons name="location" size={12} color={C.brand} />
                 <Text style={styles.areaText}>{a}</Text>
