@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, TouchableOpacity, Image, StyleSheet, Platform, useWindowDimensions } from "react-native";
+import { View, Text, TouchableOpacity, Image, StyleSheet, ScrollView, useWindowDimensions } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "@/src/context/AuthContext";
@@ -45,20 +45,56 @@ export default function AdminSidebar({ activeRoute }: Props) {
 
   const handleLogout = async () => { await logout(); router.replace("/admin"); };
 
-  // Mobile — render top header bar only
+  // Mobile — branding row + horizontal tab bar
   if (width < 768) {
     return (
-      <View style={styles.mobileHeader}>
-        <Image source={require("../../assets/images/logo.jpg")} style={styles.mobileLogo} />
-        <Text style={styles.mobileTitle}>{PAGE_TITLES[activeRoute] ?? "Admin"}</Text>
-        <View style={styles.mobileActions}>
-          <TouchableOpacity onPress={() => router.replace("/(tabs)" as any)} style={styles.mobileBtn}>
-            <Ionicons name="home-outline" size={20} color={A.active} />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={handleLogout} style={styles.mobileBtn}>
-            <Ionicons name="log-out-outline" size={20} color="rgba(220,80,80,0.85)" />
-          </TouchableOpacity>
+      <View>
+        {/* Branding row */}
+        <View style={styles.mobileHeader}>
+          <Image source={require("../../assets/images/logo.jpg")} style={styles.mobileLogo} />
+          <View style={styles.mobileBrand}>
+            <Text style={styles.mobileBrandName}>T&B Paving</Text>
+            <Text style={styles.mobileBrandSub}>Driveways · Patios · Paths</Text>
+          </View>
+          <View style={styles.mobileActions}>
+            <TouchableOpacity onPress={() => router.replace("/(tabs)" as any)} style={styles.mobileBtn}>
+              <Ionicons name="home-outline" size={18} color={A.active} />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={handleLogout} style={styles.mobileBtn}>
+              <Ionicons name="log-out-outline" size={18} color="rgba(220,80,80,0.85)" />
+            </TouchableOpacity>
+          </View>
         </View>
+
+        {/* Horizontal tab bar */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.mobileTabBar}
+          contentContainerStyle={styles.mobileTabBarContent}
+        >
+          {NAV_ITEMS.map((item) => {
+            const isActive = activeRoute === item.route;
+            return (
+              <TouchableOpacity
+                key={item.route}
+                style={[styles.mobileTab, isActive && styles.mobileTabActive]}
+                onPress={() => router.push(item.route as any)}
+                activeOpacity={0.7}
+              >
+                <Ionicons
+                  name={item.icon}
+                  size={15}
+                  color={isActive ? "#FFFFFF" : A.active}
+                  style={{ marginRight: 5 }}
+                />
+                <Text style={[styles.mobileTabText, isActive && styles.mobileTabTextActive]}>
+                  {item.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
       </View>
     );
   }
@@ -206,11 +242,36 @@ const styles = StyleSheet.create({
     flexDirection: "row", alignItems: "center",
     backgroundColor: "#FFFFFF",
     borderBottomWidth: 1, borderBottomColor: "#E8E0D4",
-    paddingHorizontal: 16, paddingVertical: 10,
+    paddingHorizontal: 14, paddingVertical: 10,
     gap: 10,
   },
-  mobileLogo: { width: 38, height: 38, borderRadius: 19 },
-  mobileTitle: { flex: 1, fontSize: 17, fontWeight: "700", color: "#1A2A3A" },
+  mobileLogo: { width: 40, height: 40, borderRadius: 20 },
+  mobileBrand: { flex: 1 },
+  mobileBrandName: { fontSize: 15, fontWeight: "800", color: "#1A2A3A", letterSpacing: 0.2 },
+  mobileBrandSub: { fontSize: 11, color: "#B5651D", fontWeight: "500", marginTop: 1 },
   mobileActions: { flexDirection: "row", gap: 4 },
-  mobileBtn: { padding: 8, borderRadius: 8, backgroundColor: "#F7F4F0" },
+  mobileBtn: { padding: 7, borderRadius: 8, backgroundColor: "#F7F4F0" },
+  mobileTabBar: {
+    backgroundColor: "#1A2A3A",
+    borderBottomWidth: 2,
+    borderBottomColor: "#B5651D",
+  },
+  mobileTabBarContent: {
+    paddingHorizontal: 10, paddingVertical: 8, gap: 6, flexDirection: "row",
+  },
+  mobileTab: {
+    flexDirection: "row", alignItems: "center",
+    paddingVertical: 6, paddingHorizontal: 12,
+    borderRadius: 20,
+    backgroundColor: "rgba(255,255,255,0.08)",
+  },
+  mobileTabActive: {
+    backgroundColor: "#B5651D",
+  },
+  mobileTabText: {
+    fontSize: 13, fontWeight: "600", color: "rgba(255,255,255,0.75)",
+  },
+  mobileTabTextActive: {
+    color: "#FFFFFF",
+  },
 });
