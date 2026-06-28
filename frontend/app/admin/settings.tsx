@@ -8,7 +8,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "@/src/context/AuthContext";
 import { api } from "@/src/api";
 import AdminSidebar from "@/src/components/AdminSidebar";
-import { BIZ, FAQS, SERVICES, AREAS, STATS } from "@/src/brand";
+import { BIZ, FAQS, SERVICES, AREAS, STATS, STEPS } from "@/src/brand";
 
 const P = {
   bg: "#F7F4F0", card: "#FFFFFF", navy: "#1A2A3A", copper: "#B5651D",
@@ -16,11 +16,12 @@ const P = {
   error: "#DC2626", success: "#2D7A4F",
 };
 
-type Tab = "biz" | "faqs" | "hero" | "services" | "areas" | "stats";
+type Tab = "biz" | "faqs" | "hero" | "hero-images" | "services" | "areas" | "stats" | "steps";
 type FAQ = { q: string; a: string };
 type HeroSlide = { headline: string; sub: string };
 type Service = { id: string; title: string; desc: string };
 type Stat = { value: string; label: string };
+type Step = { n: string; icon: string; title: string; desc: string };
 
 const DEFAULT_SLIDES: HeroSlide[] = [
   { headline: "Professional Groundworks &\nExpert Installation", sub: "From first call to finished driveway — straightforward, transparent and stress-free." },
@@ -75,6 +76,14 @@ export default function Settings() {
   // Stats
   const [stats, setStats] = useState<Stat[]>(STATS.map(s => ({ value: s.value, label: s.label })));
 
+  // Steps
+  const [steps, setSteps] = useState<Step[]>(STEPS.map(s => ({ n: s.n, icon: s.icon, title: s.title, desc: s.desc })));
+
+  // Hero images (base64 per slot, "" = use default local asset)
+  const [heroImages, setHeroImages] = useState<string[]>(["", "", "", "", ""]);
+  const [uploadingSlot, setUploadingSlot] = useState<number | null>(null);
+  const [heroPreview, setHeroPreview] = useState<string[]>(["", "", "", "", ""]);
+
   useEffect(() => {
     if (!loading && !user) router.replace("/admin");
   }, [user, loading]);
@@ -98,6 +107,13 @@ export default function Settings() {
         if (data.services?.length) setServices(data.services);
         if (data.areas?.length) setAreas(data.areas);
         if (data.stats?.length) setStats(data.stats);
+        if (data.steps?.length) setSteps(data.steps);
+        if (data.hero_images?.length) {
+          const imgs = [...data.hero_images];
+          while (imgs.length < 5) imgs.push("");
+          setHeroImages(imgs);
+          setHeroPreview(imgs.map((b: string) => b ? `data:image/jpeg;base64,${b}` : ""));
+        }
       }
     } catch {}
     setFetching(false);
@@ -112,7 +128,7 @@ export default function Settings() {
         biz_name: bizName, tagline, since, headline, intro,
         phone, mobile, email, hours, area,
         faqs, hero_slides: slides,
-        services, areas, stats,
+        services, areas, stats, steps,
       });
       setSavedTab(which);
       setTimeout(() => setSavedTab(null), 2500);
@@ -179,13 +195,52 @@ export default function Settings() {
   const updateStat = (i: number, field: keyof Stat, val: string) =>
     setStats(prev => prev.map((s, idx) => idx === i ? { ...s, [field]: val } : s));
 
+  const updateStep = (i: number, field: keyof Step, val: string) =>
+    setSteps(prev => prev.map((s, idx) => idx === i ? { ...s, [field]: val } : s));
+
+  const uploadHeroImage = async (slot: number, file: File) => {
+    setUploadingSlot(slot);
+    try {
+      const reader = new FileReader();
+      const b64: string = await new Promise((res, rej) => {
+        reader.onload = () => res((reader.result as string).split(",")[1]);
+        reader.onerror = rej;
+        reader.readAsDataURL(file);
+      });
+      setHeroPreview(prev => { const a = [...prev]; a[slot] = `data:${file.type};base64,${b64}`; return a; });
+      await api.put(`/site-settings/hero-image/${slot}`, { image_base64: b64 });
+      setHeroImages(prev => { const a = [...prev]; a[slot] = b64; return a; });
+      Alert.alert("Uploaded", `Slide ${slot + 1} image updated.`);
+    } catch (e: any) {
+      Alert.alert("Error", e.message || "Upload failed.");
+    }
+    setUploadingSlot(null);
+  };
+
+  const removeHeroImage = async (slot: number) => {
+    Alert.alert("Remove Image", "Restore the default image for this slide?", [
+      { text: "Cancel", style: "cancel" },
+      { text: "Remove", style: "destructive", onPress: async () => {
+        try {
+          await api.del(`/site-settings/hero-image/${slot}`);
+          setHeroImages(prev => { const a = [...prev]; a[slot] = ""; return a; });
+          setHeroPreview(prev => { const a = [...prev]; a[slot] = ""; return a; });
+        } catch (e: any) {
+          Alert.alert("Error", e.message || "Could not remove.");
+        }
+      }},
+    ]);
+  };
+
   const TABS: { key: Tab; label: string; icon: any }[] = [
-    { key: "biz",      label: "Business Info", icon: "business-outline" },
-    { key: "faqs",     label: "FAQs",          icon: "help-circle-outline" },
-    { key: "hero",     label: "Hero Text",     icon: "image-outline" },
-    { key: "services", label: "Services",      icon: "construct-outline" },
-    { key: "areas",    label: "Areas",         icon: "location-outline" },
-    { key: "stats",    label: "Stats",         icon: "bar-chart-outline" },
+    { key: "biz",         label: "Business Info", icon: "business-outline" },
+    { key: "faqs",        label: "FAQs",          icon: "help-circle-outline" },
+    { key: "hero",        label: "Hero Text",     icon: "text-outline" },
+    { key: "hero-images", label: "Hero Images",   icon: "image-outline" },
+    { key: "services",    label: "Services",      icon: "construct-outline" },
+    { key: "areas",       label: "Areas",         icon: "location-outline" },
+    { key: "stats",       label: "Stats",         icon: "bar-chart-outline" },
+    { key: "steps",       label: "How It Works",  icon: "list-outline" },
   ];
 
   const SaveBar = ({ which }: { which: Tab }) => (
@@ -589,6 +644,114 @@ export default function Settings() {
             </View>
           )}
 
+          {/* ── HOW IT WORKS (STEPS) ── */}
+          {tab === "steps" && (
+            <View>
+              <View style={styles.infoBox}>
+                <Ionicons name="information-circle-outline" size={16} color={P.copper} />
+                <Text style={styles.infoText}>Edit the title and description for each step. Step numbers and icons stay the same.</Text>
+              </View>
+
+              {steps.map((step, i) => (
+                <View key={step.n} style={styles.card}>
+                  <View style={styles.slideHeader}>
+                    <View style={styles.slideBadge}>
+                      <Text style={styles.slideBadgeText}>Step {step.n}</Text>
+                    </View>
+                    <Text style={styles.slidePreview} numberOfLines={1}>{step.title}</Text>
+                  </View>
+                  <View style={styles.field}>
+                    <Text style={styles.label}>Title</Text>
+                    <TextInput
+                      style={styles.input} value={step.title}
+                      onChangeText={(v) => updateStep(i, "title", v)}
+                      placeholderTextColor={P.muted}
+                    />
+                  </View>
+                  <View style={styles.field}>
+                    <Text style={styles.label}>Description</Text>
+                    <TextInput
+                      style={[styles.input, styles.textarea]} value={step.desc}
+                      onChangeText={(v) => updateStep(i, "desc", v)}
+                      multiline numberOfLines={2} textAlignVertical="top"
+                      placeholderTextColor={P.muted}
+                    />
+                  </View>
+                </View>
+              ))}
+
+              <SaveBar which="steps" />
+            </View>
+          )}
+
+          {/* ── HERO IMAGES ── */}
+          {tab === "hero-images" && (
+            <View>
+              <View style={styles.infoBox}>
+                <Ionicons name="information-circle-outline" size={16} color={P.copper} />
+                <Text style={styles.infoText}>Replace the background image for any hero slide. Saves immediately on upload. Recommended: 1920×1080 JPG.</Text>
+              </View>
+
+              {DEFAULT_SLIDES.map((slide, i) => (
+                <View key={i} style={styles.card}>
+                  <View style={styles.slideHeader}>
+                    <View style={styles.slideBadge}>
+                      <Text style={styles.slideBadgeText}>Slide {i + 1}</Text>
+                    </View>
+                    <Text style={styles.slidePreview} numberOfLines={1}>{slide.headline.replace("\n", " ")}</Text>
+                  </View>
+
+                  {heroPreview[i] ? (
+                    <View style={styles.heroImgPreviewWrap}>
+                      <Image source={{ uri: heroPreview[i] }} style={styles.heroImgPreview} resizeMode="cover" />
+                      <TouchableOpacity style={styles.heroImgRemove} onPress={() => removeHeroImage(i)} activeOpacity={0.8}>
+                        <Ionicons name="trash-outline" size={14} color="#FFFFFF" />
+                        <Text style={styles.heroImgRemoveText}>Remove</Text>
+                      </TouchableOpacity>
+                    </View>
+                  ) : (
+                    <View style={styles.heroImgPlaceholder}>
+                      <Ionicons name="image-outline" size={32} color={P.muted} />
+                      <Text style={styles.heroImgPlaceholderText}>Using default image</Text>
+                    </View>
+                  )}
+
+                  {/* File input — web only */}
+                  <View style={styles.heroUploadRow}>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      style={{ display: "none" }}
+                      id={`hero-img-${i}`}
+                      onChange={(e: any) => {
+                        const file = e.target.files?.[0];
+                        if (file) uploadHeroImage(i, file);
+                        e.target.value = "";
+                      }}
+                    />
+                    <TouchableOpacity
+                      style={[styles.heroUploadBtn, uploadingSlot === i && styles.btnDisabled]}
+                      disabled={uploadingSlot === i}
+                      activeOpacity={0.8}
+                      onPress={() => {
+                        const el = document.getElementById(`hero-img-${i}`);
+                        if (el) (el as HTMLInputElement).click();
+                      }}
+                    >
+                      {uploadingSlot === i
+                        ? <ActivityIndicator size="small" color="#FFFFFF" />
+                        : <>
+                            <Ionicons name="cloud-upload-outline" size={15} color="#FFFFFF" />
+                            <Text style={styles.heroUploadBtnText}>{heroImages[i] ? "Replace Image" : "Upload Image"}</Text>
+                          </>
+                      }
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ))}
+            </View>
+          )}
+
         </ScrollView>
       </View>
     </View>
@@ -710,4 +873,26 @@ const styles = StyleSheet.create({
     width: 42, height: 42, borderRadius: 10,
     backgroundColor: P.copper, alignItems: "center", justifyContent: "center",
   },
+  heroImgPreviewWrap: { borderRadius: 10, overflow: "hidden", marginBottom: 12, position: "relative" },
+  heroImgPreview: { width: "100%", height: 160, borderRadius: 10 },
+  heroImgRemove: {
+    position: "absolute", top: 8, right: 8,
+    flexDirection: "row", alignItems: "center", gap: 4,
+    backgroundColor: "rgba(220,38,38,0.85)", borderRadius: 8,
+    paddingVertical: 5, paddingHorizontal: 10,
+  },
+  heroImgRemoveText: { color: "#FFFFFF", fontSize: 12, fontWeight: "700" },
+  heroImgPlaceholder: {
+    height: 100, borderRadius: 10, borderWidth: 1.5, borderColor: P.border,
+    borderStyle: "dashed", alignItems: "center", justifyContent: "center",
+    backgroundColor: "#FAFAF8", marginBottom: 12, gap: 6,
+  },
+  heroImgPlaceholderText: { fontSize: 13, color: P.muted },
+  heroUploadRow: { flexDirection: "row" },
+  heroUploadBtn: {
+    flexDirection: "row", alignItems: "center", gap: 8,
+    backgroundColor: P.navy, borderRadius: 10,
+    paddingVertical: 11, paddingHorizontal: 18,
+  },
+  heroUploadBtnText: { color: "#FFFFFF", fontSize: 14, fontWeight: "600" },
 });

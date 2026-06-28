@@ -188,6 +188,12 @@ class SiteSettingsBody(BaseModel):
     services: List[dict] = []
     areas: List[str] = []
     stats: List[dict] = []
+    steps: List[dict] = []
+    hero_images: List[str] = []
+
+
+class HeroImageBody(BaseModel):
+    image_base64: str
 
 
 class ChatBody(BaseModel):
@@ -508,6 +514,40 @@ async def update_site_settings(body: SiteSettingsBody, user=Depends(get_current_
     await db.site_settings.update_one(
         {"owner_id": user["id"]},
         {"$set": {**body.dict(), "owner_id": user["id"], "updated_at": now_iso()}},
+        upsert=True,
+    )
+    return {"ok": True}
+
+
+@api_router.put("/site-settings/hero-image/{slot}")
+async def update_hero_image(slot: int, body: HeroImageBody, user=Depends(get_current_user)):
+    if slot < 0 or slot > 4:
+        raise HTTPException(status_code=400, detail="Slot must be 0–4")
+    existing = await db.site_settings.find_one({"owner_id": user["id"]})
+    images: list = existing.get("hero_images", []) if existing else []
+    while len(images) <= slot:
+        images.append("")
+    images[slot] = body.image_base64
+    await db.site_settings.update_one(
+        {"owner_id": user["id"]},
+        {"$set": {"hero_images": images, "updated_at": now_iso()}},
+        upsert=True,
+    )
+    return {"ok": True}
+
+
+@api_router.delete("/site-settings/hero-image/{slot}")
+async def delete_hero_image(slot: int, user=Depends(get_current_user)):
+    if slot < 0 or slot > 4:
+        raise HTTPException(status_code=400, detail="Slot must be 0–4")
+    existing = await db.site_settings.find_one({"owner_id": user["id"]})
+    images: list = existing.get("hero_images", []) if existing else []
+    while len(images) <= slot:
+        images.append("")
+    images[slot] = ""
+    await db.site_settings.update_one(
+        {"owner_id": user["id"]},
+        {"$set": {"hero_images": images, "updated_at": now_iso()}},
         upsert=True,
     )
     return {"ok": True}

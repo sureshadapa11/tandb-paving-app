@@ -93,11 +93,23 @@ export default function Home() {
     desc: settings?.services?.[i]?.desc || s.desc,
   }));
 
-  const slides = SLIDES.map((s, i) => ({
+  const steps = STEPS.map((s, i) => ({
     ...s,
-    headline: settings?.hero_slides?.[i]?.headline || s.headline,
-    sub: settings?.hero_slides?.[i]?.sub || s.sub,
+    title: settings?.steps?.[i]?.title || s.title,
+    desc: settings?.steps?.[i]?.desc || s.desc,
   }));
+
+  const slides = SLIDES.map((s, i) => {
+    const customImg = settings?.hero_images?.[i];
+    const imgSrc = customImg ? { uri: `data:image/jpeg;base64,${customImg}` } : s.img;
+    return {
+      ...s,
+      headline: settings?.hero_slides?.[i]?.headline || s.headline,
+      sub: settings?.hero_slides?.[i]?.sub || s.sub,
+      img: imgSrc,
+      imgMobile: customImg ? imgSrc : (s as any).imgMobile,
+    };
+  });
 
   const handleScroll = useCallback((e: any) => {
     const y = e.nativeEvent.contentOffset.y;
@@ -333,12 +345,12 @@ export default function Home() {
             { marginTop: S.xl },
             isDesktop ? { flexDirection: "row", gap: S.lg } : { gap: S.lg },
           ]}>
-            {STEPS.map((st, i) => (
+            {steps.map((st, i) => (
               <View key={st.n} style={[styles.step, isDesktop && { flex: 1, flexDirection: "column", alignItems: "center" }]}>
                 <View style={styles.stepNum}>
                   <Text style={styles.stepNumText}>{st.n}</Text>
                 </View>
-                {isDesktop && i < STEPS.length - 1 && (
+                {isDesktop && i < steps.length - 1 && (
                   <View style={styles.stepConnector} />
                 )}
                 <View style={[{ flex: 1 }, isDesktop && { alignItems: "center", marginTop: S.md }]}>
