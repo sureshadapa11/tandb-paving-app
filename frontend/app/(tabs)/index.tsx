@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useCallback } from "react";
 import {
-  View, Text, StyleSheet, ScrollView, Pressable, Linking,
+  View, Text, StyleSheet, ScrollView, Pressable, Linking, Animated,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Image } from "expo-image";
@@ -10,10 +10,28 @@ import { C, S, R, SHADOW } from "@/src/theme";
 import { Btn, Eyebrow, SectionTitle, Logo, Stars, MaxWidth } from "@/src/components/ui";
 import { Tilt3D } from "@/src/components/Card3D";
 import {
-  BIZ, STATS, TRUST, SERVICES, STEPS, HERO_IMG, ABOUT_IMG,
+  BIZ, STATS, TRUST, SERVICES, STEPS,
   GALLERY, TESTIMONIALS, AREAS, FAQS, REVIEW_PLATFORMS,
 } from "@/src/brand";
 import { useResponsive } from "@/src/hooks/use-responsive";
+
+const SLIDES = [
+  {
+    img: require("../../assets/images/hero-excavator.webp"),
+    headline: "Professional Groundworks &\nExpert Installation",
+    sub: "From first call to finished driveway — straightforward, transparent and stress-free.",
+  },
+  {
+    img: require("../../assets/images/block-paving.jpg"),
+    headline: "Stunning Block Paved\nDriveways",
+    sub: "Durable, stylish driveways in countless colours and patterns. Built to last.",
+  },
+  {
+    img: require("../../assets/images/sandstone-patio.jpg"),
+    headline: "Beautiful Patios &\nGarden Spaces",
+    sub: "Natural stone, porcelain & Indian sandstone. Crafted to impress.",
+  },
+];
 
 export default function Home() {
   const router = useRouter();
@@ -22,6 +40,27 @@ export default function Home() {
 
   const scrollRef = useRef<ScrollView>(null);
   const sectionY = useRef<Record<string, number>>({});
+
+  // Hero slider
+  const [slideIdx, setSlideIdx] = React.useState(0);
+  const fadeAnim = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      Animated.timing(fadeAnim, { toValue: 0, duration: 500, useNativeDriver: true }).start(() => {
+        setSlideIdx((prev) => (prev + 1) % SLIDES.length);
+        Animated.timing(fadeAnim, { toValue: 1, duration: 500, useNativeDriver: true }).start();
+      });
+    }, 4500);
+    return () => clearInterval(interval);
+  }, [fadeAnim]);
+
+  const goSlide = (i: number) => {
+    Animated.timing(fadeAnim, { toValue: 0, duration: 300, useNativeDriver: true }).start(() => {
+      setSlideIdx(i);
+      Animated.timing(fadeAnim, { toValue: 1, duration: 300, useNativeDriver: true }).start();
+    });
+  };
 
   const call = () => Linking.openURL(`tel:${BIZ.mobile.replace(/\s/g, "")}`);
   const goQuote = () => router.push("/(tabs)/quote" as any);
@@ -53,23 +92,27 @@ export default function Home() {
       contentContainerStyle={{ paddingBottom: S["3xl"] }}
       style={{ flex: 1, backgroundColor: C.bg }}
     >
-      {/* ── HERO ── */}
+      {/* ── HERO SLIDER ── */}
       <View style={[styles.hero, { height: heroH }]}>
-        <Image source={HERO_IMG} style={StyleSheet.absoluteFill} contentFit="cover" transition={300} />
-        <LinearGradient
-          colors={["rgba(20,15,10,0.15)", "rgba(20,15,10,0.85)"]}
-          style={StyleSheet.absoluteFill}
-        />
+        {/* Background image — crossfades */}
+        <Animated.View style={[StyleSheet.absoluteFill, { opacity: fadeAnim }]}>
+          <Image source={SLIDES[slideIdx].img} style={StyleSheet.absoluteFill} contentFit="cover" />
+          <LinearGradient
+            colors={["rgba(10,8,5,0.18)", "rgba(10,8,5,0.80)"]}
+            style={StyleSheet.absoluteFill}
+          />
+        </Animated.View>
+
         <MaxWidth style={{ flex: 1, justifyContent: "flex-end" }}>
-          <View style={[styles.heroContent, { paddingHorizontal: hPad }]}>
+          <Animated.View style={[styles.heroContent, { paddingHorizontal: hPad, opacity: fadeAnim }]}>
             <View style={styles.heroBadge}>
               <Ionicons name="shield-checkmark" size={13} color={C.accent} />
               <Text style={styles.heroBadgeText}>{BIZ.since.toUpperCase()}</Text>
             </View>
-            <Text style={[styles.heroTitle, { fontSize: heroTitleSize, lineHeight: heroTitleSize * 1.08 }]}>
-              {BIZ.headline}
+            <Text style={[styles.heroTitle, { fontSize: heroTitleSize, lineHeight: heroTitleSize * 1.1 }]}>
+              {SLIDES[slideIdx].headline}
             </Text>
-            <Text style={styles.heroSub}>{BIZ.intro}</Text>
+            <Text style={styles.heroSub}>{SLIDES[slideIdx].sub}</Text>
             <View style={[styles.heroBtns, isDesktop && { flexDirection: "row", gap: S.md }]}>
               <Btn
                 testID="hero-quote-btn"
@@ -83,8 +126,27 @@ export default function Home() {
                 <Text style={styles.heroCallText}>{BIZ.phone}</Text>
               </Pressable>
             </View>
-          </View>
+          </Animated.View>
         </MaxWidth>
+
+        {/* Slide dots + arrows */}
+        <View style={styles.slideControls}>
+          {isDesktop && (
+            <Pressable onPress={() => goSlide((slideIdx - 1 + SLIDES.length) % SLIDES.length)} style={styles.slideArrow}>
+              <Ionicons name="chevron-back" size={22} color="#fff" />
+            </Pressable>
+          )}
+          <View style={styles.slideDots}>
+            {SLIDES.map((_, i) => (
+              <Pressable key={i} onPress={() => goSlide(i)} style={[styles.dot, i === slideIdx && styles.dotActive]} />
+            ))}
+          </View>
+          {isDesktop && (
+            <Pressable onPress={() => goSlide((slideIdx + 1) % SLIDES.length)} style={styles.slideArrow}>
+              <Ionicons name="chevron-forward" size={22} color="#fff" />
+            </Pressable>
+          )}
+        </View>
       </View>
 
       {/* ── STATS ── */}
@@ -166,11 +228,11 @@ export default function Home() {
       {/* ── PROCESS ── */}
       <View
         onLayout={onLayout("process")}
-        style={[styles.darkBand, { paddingHorizontal: hPad, paddingVertical: S["2xl"] }]}
+        style={[styles.lightBand, { paddingHorizontal: hPad, paddingVertical: S["2xl"] }]}
       >
         <MaxWidth>
           <Eyebrow>How It Works</Eyebrow>
-          <SectionTitle light>Our Simple 4-Step Process</SectionTitle>
+          <SectionTitle>Our Simple 4-Step Process</SectionTitle>
           <View style={[
             { marginTop: S.xl },
             isDesktop ? { flexDirection: "row", gap: S.lg } : { gap: S.lg },
@@ -184,7 +246,7 @@ export default function Home() {
                   <View style={styles.stepConnector} />
                 )}
                 <View style={[{ flex: 1 }, isDesktop && { alignItems: "center", marginTop: S.md }]}>
-                  <Ionicons name={st.icon as any} size={22} color={C.accent} style={{ marginBottom: 6 }} />
+                  <Ionicons name={st.icon as any} size={22} color={C.brand} style={{ marginBottom: 6 }} />
                   <Text style={[styles.stepTitle, isDesktop && { textAlign: "center" }]}>{st.title}</Text>
                   <Text style={[styles.stepDesc, isDesktop && { textAlign: "center" }]}>{st.desc}</Text>
                 </View>
@@ -424,7 +486,22 @@ function FaqAccordion({ faqs, isDesktop }: { faqs: typeof FAQS; isDesktop: boole
 
 const styles = StyleSheet.create({
   hero: { justifyContent: "flex-end" },
-  heroContent: { paddingBottom: 40 },
+  heroContent: { paddingBottom: 56 },
+  slideControls: {
+    position: "absolute", bottom: 18, left: 0, right: 0,
+    flexDirection: "row", alignItems: "center", justifyContent: "center", gap: S.md,
+  },
+  slideArrow: {
+    width: 38, height: 38, borderRadius: 19,
+    backgroundColor: "rgba(255,255,255,0.18)",
+    alignItems: "center", justifyContent: "center",
+  },
+  slideDots: { flexDirection: "row", gap: 8, alignItems: "center" },
+  dot: {
+    width: 8, height: 8, borderRadius: 4,
+    backgroundColor: "rgba(255,255,255,0.45)",
+  },
+  dotActive: { width: 24, backgroundColor: C.accent },
   heroBadge: {
     flexDirection: "row", alignItems: "center", gap: 6,
     alignSelf: "flex-start",
@@ -468,7 +545,7 @@ const styles = StyleSheet.create({
   },
   svTitle: { fontSize: 15, fontWeight: "800", color: C.ink },
   svDesc: { fontSize: 12.5, color: C.muted, marginTop: 2, lineHeight: 17 },
-  darkBand: { backgroundColor: C.ink },
+  lightBand: { backgroundColor: C.surfaceAlt },
   step: { flexDirection: "row", gap: S.md, alignItems: "flex-start" },
   stepNum: {
     width: 44, height: 44, borderRadius: R.md,
@@ -477,8 +554,8 @@ const styles = StyleSheet.create({
   },
   stepNumText: { color: C.onBrand, fontWeight: "900", fontSize: 16 },
   stepConnector: { display: "none" },
-  stepTitle: { color: C.surface, fontSize: 16, fontWeight: "800" },
-  stepDesc: { color: "rgba(255,255,255,0.72)", fontSize: 13, marginTop: 4, lineHeight: 19 },
+  stepTitle: { color: C.ink, fontSize: 16, fontWeight: "800" },
+  stepDesc: { color: C.inkSoft, fontSize: 13, marginTop: 4, lineHeight: 19 },
   galleryCard: {
     borderRadius: R.lg, overflow: "hidden",
     backgroundColor: C.surface, borderWidth: 1, borderColor: C.border,
