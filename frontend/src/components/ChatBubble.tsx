@@ -36,6 +36,17 @@ export default function ChatBubble() {
     }).start();
   }, [open]);
 
+  // Close on click outside (web only)
+  useEffect(() => {
+    if (!open || Platform.OS !== "web") return;
+    const doc = (globalThis as any).document;
+    if (!doc) return;
+    const close = () => setOpen(false);
+    // Small delay so the click that opened the chat doesn't immediately close it
+    const t = setTimeout(() => doc.addEventListener("click", close), 50);
+    return () => { clearTimeout(t); doc.removeEventListener("click", close); };
+  }, [open]);
+
   useEffect(() => {
     if (open && messages.length === 0 && !started) {
       setStarted(true);
@@ -85,15 +96,6 @@ export default function ChatBubble() {
   const hasSuggestions = messages.length <= 1;
 
   return (
-    <>
-      {/* Backdrop — closes chat when clicking outside (web) */}
-      {open && (
-        <View
-          style={styles.backdrop}
-          onStartShouldSetResponder={() => true}
-          onResponderRelease={() => setOpen(false)}
-        />
-      )}
     <View style={styles.container} pointerEvents="box-none">
       {/* Chat panel */}
       {open && (
@@ -102,6 +104,7 @@ export default function ChatBubble() {
             styles.panel,
             { transform: [{ translateY: panelTranslate }], opacity: panelOpacity },
           ]}
+          {...(Platform.OS === "web" ? { onClick: (e: any) => e.stopPropagation() } as any : {})}
         >
           {/* Panel header */}
           <View style={styles.panelHeader}>
@@ -183,6 +186,7 @@ export default function ChatBubble() {
         style={[styles.fab, open && styles.fabOpen]}
         onPress={() => setOpen(o => !o)}
         activeOpacity={0.85}
+        {...(Platform.OS === "web" ? { onClick: (e: any) => e.stopPropagation() } as any : {})}
       >
         <Ionicons name={open ? "close" : "chatbubble-ellipses"} size={24} color="#fff" />
         {!open && (
@@ -192,18 +196,12 @@ export default function ChatBubble() {
         )}
       </TouchableOpacity>
     </View>
-    </>
   );
 }
 
 const PANEL_W = 340;
 
 const styles = StyleSheet.create({
-  backdrop: {
-    position: Platform.OS === "web" ? "fixed" as any : "absolute",
-    top: 0, left: 0, right: 0, bottom: 0,
-    zIndex: 998,
-  },
   container: {
     position: "absolute",
     bottom: 24,
