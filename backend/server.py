@@ -785,9 +785,9 @@ async def update_enquiry(eid: str, status: str, user=Depends(get_current_user)):
 @api_router.post("/ai/paving-estimate", dependencies=[Depends(rate_limit(10, 3600))])
 async def paving_estimate(body: PavingEstimateBody):
     prompt = (
-        "You are an expert UK paving and driveway estimator for T&B Paving (Manchester & North West). "
+        "You are an expert UK paving and driveway estimator for T&B Paving (Essex & Suffolk). "
         "Give a friendly, realistic BALLPARK estimate in GBP (£) for the following job. "
-        "Use typical UK 2026 market rates.\n\n"
+        "Use typical UK 2026 market rates for the Essex & Suffolk area.\n\n"
         f"Service: {body.service}\n"
         f"Approx area: {body.area or 'not specified'}\n"
         f"Preferred material: {body.material or 'not specified'}\n"
@@ -817,6 +817,36 @@ async def paving_estimate(body: PavingEstimateBody):
 
 
 # ---------- AI ----------
+class PublicChatBody(BaseModel):
+    message: str
+    history: list = []
+
+@api_router.post("/ai/public-chat", dependencies=[Depends(rate_limit(20, 3600))])
+async def ai_public_chat(body: PublicChatBody):
+    if not openai_client:
+        raise HTTPException(status_code=503, detail="AI service not configured")
+    system = (
+        "You are a friendly assistant for T&B Paving, a professional paving company in Essex & Suffolk, UK. "
+        "Help customers with questions about driveways, patios, paths, block paving, resin bound, tarmac, gravel, and garden steps. "
+        "You cover services in Essex & Suffolk. Phone: 01376 618683. Email: bbirdpaving@gmail.com. "
+        "Hours: Mon-Sat 7:30am-6pm. Always suggest booking a free site survey for exact quotes. "
+        "Be warm, helpful and concise. If asked something unrelated to paving or the business, politely redirect."
+    )
+    messages = [{"role": "system", "content": system}]
+    for h in body.history[-6:]:
+        messages.append({"role": h["role"], "content": h["content"]})
+    messages.append({"role": "user", "content": body.message})
+    try:
+        response = await openai_client.chat.completions.create(
+            model="gpt-4o-mini", messages=messages, max_tokens=300,
+        )
+        reply = response.choices[0].message.content
+    except Exception as e:
+        logger.error(f"Public chat error: {e}")
+        raise HTTPException(status_code=500, detail="AI service error")
+    return {"reply": reply}
+
+
 @api_router.post("/ai/chat")
 async def ai_chat(body: ChatBody, user=Depends(get_current_user)):
     if not openai_client:
@@ -886,6 +916,40 @@ async def ai_estimate(body: EstimateBody, user=Depends(get_current_user)):
         logger.error(f"AI estimate error: {e}")
         raise HTTPException(status_code=500, detail="AI service error")
     return {"estimate": reply}
+
+
+class ReviewReplyBody(BaseModel):
+    reviewer_name: str
+    review_text: str
+    stars: int = 5
+
+@api_router.post("/ai/review-reply")
+async def ai_review_reply(body: ReviewReplyBody, user=Depends(get_current_user)):
+    if not openai_client:
+        raise HTTPException(status_code=503, detail="AI service not configured")
+    prompt = (
+        f"Write a warm, professional reply to this customer review for T&B Paving (Essex & Suffolk).\n\n"
+        f"Reviewer: {body.reviewer_name}\n"
+        f"Stars: {body.stars}/5\n"
+        f"Review: {body.review_text}\n\n"
+        "Guidelines: Thank them by first name. Reference something specific from their review. "
+        "Mention you'd be happy to help them or their contacts in future. "
+        "Keep it 2-3 sentences. Sound genuine, not corporate. Sign off as 'The T&B Paving Team'."
+    )
+    try:
+        response = await openai_client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": "You write friendly, genuine business replies to customer reviews."},
+                {"role": "user", "content": prompt},
+            ],
+            max_tokens=150,
+        )
+        reply = response.choices[0].message.content
+    except Exception as e:
+        logger.error(f"Review reply error: {e}")
+        raise HTTPException(status_code=500, detail="AI service error")
+    return {"reply": reply}
 
 
 @api_router.get("/")
