@@ -368,6 +368,16 @@ async def update_quote(qid: str, body: QuoteBody, background: BackgroundTasks, u
     return clean(doc)
 
 
+@api_router.patch("/quotes/{qid}/status")
+async def patch_quote_status(qid: str, status: str, background: BackgroundTasks, user=Depends(get_current_user)):
+    existing = await db.quotes.find_one({"id": qid})
+    await db.quotes.update_one({"id": qid}, {"$set": {"status": status}})
+    doc = await db.quotes.find_one({"id": qid})
+    if status == "sent" and existing and existing.get("status") != "sent":
+        background.add_task(send_quote_email, clean(doc))
+    return {"ok": True}
+
+
 @api_router.delete("/quotes/{qid}")
 async def delete_quote(qid: str, user=Depends(get_current_user)):
     await db.quotes.delete_one({"id": qid})

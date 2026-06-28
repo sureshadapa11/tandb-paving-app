@@ -52,6 +52,7 @@ export default function Quotes() {
   const [loadError, setLoadError] = useState(false);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
+  const [patchingId, setPatchingId] = useState<number | null>(null);
 
   const [clientName, setClientName] = useState("");
   const [clientEmail, setClientEmail] = useState("");
@@ -231,6 +232,19 @@ export default function Quotes() {
     setSaving(false);
   };
 
+  const patchStatus = async (q: Quote, status: string) => {
+    const prev = q.status;
+    setPatchingId(q.id);
+    setQuotes((list) => list.map((x) => x.id === q.id ? { ...x, status } : x));
+    try {
+      await api.patch(`/quotes/${q.id}/status?status=${status}`);
+    } catch {
+      setQuotes((list) => list.map((x) => x.id === q.id ? { ...x, status: prev } : x));
+      Alert.alert("Error", "Could not update status.");
+    }
+    setPatchingId(null);
+  };
+
   const deleteQuote = async (id: number) => {
     Alert.alert("Delete Quote", "Are you sure?", [
       { text: "Cancel", style: "cancel" },
@@ -285,7 +299,27 @@ export default function Quotes() {
             </View>
             <View style={{ alignItems: "flex-end", gap: 6 }}>
               <Text style={styles.quoteTotal}>£{q.total?.toFixed(2) ?? "0.00"}</Text>
-              <StatusBadge status={q.status} />
+              {patchingId === q.id ? (
+                <ActivityIndicator size="small" color={P.copper} />
+              ) : (
+                <View style={{ flexDirection: "row", gap: 4, flexWrap: "wrap", justifyContent: "flex-end" }}>
+                  {(["draft", "sent", "paid", "rejected"] as const).map((s) => (
+                    <TouchableOpacity
+                      key={s}
+                      onPress={() => q.status !== s && patchStatus(q, s)}
+                      activeOpacity={0.7}
+                      style={[
+                        styles.statusPill,
+                        q.status === s && { backgroundColor: QUOTE_STATUS[s].color, borderColor: QUOTE_STATUS[s].color },
+                      ]}
+                    >
+                      <Text style={[styles.statusPillText, q.status === s && { color: "#fff" }]}>
+                        {s.charAt(0).toUpperCase() + s.slice(1)}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
               <View style={{ flexDirection: "row", gap: 10 }}>
                 <TouchableOpacity onPress={() => printQuote(q)} activeOpacity={0.7}>
                   <Ionicons name="print-outline" size={16} color={P.copper} />
@@ -530,5 +564,10 @@ const styles = StyleSheet.create({
   btnDisabled: { opacity: 0.6 },
   badge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 20 },
   badgeText: { fontSize: 11, fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.3 },
+  statusPill: {
+    paddingHorizontal: 7, paddingVertical: 3, borderRadius: 12,
+    borderWidth: 1, borderColor: P.border, backgroundColor: "#F7F4F0",
+  },
+  statusPillText: { fontSize: 10, fontWeight: "700", color: P.muted },
   emptyText: { color: P.muted, fontSize: 14, padding: 12 },
 });
