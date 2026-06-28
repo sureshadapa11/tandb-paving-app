@@ -195,23 +195,25 @@ export default function Testimonials() {
         </View>
 
         {/* Tab bar */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabBar} contentContainerStyle={styles.tabBarContent}>
-          {TABS.map((t) => (
-            <TouchableOpacity
-              key={t.key}
-              style={[styles.tabBtn, tab === t.key && styles.tabBtnActive]}
-              onPress={() => setTab(t.key)}
-              activeOpacity={0.7}
-            >
-              <Text style={[styles.tabBtnText, tab === t.key && styles.tabBtnTextActive]}>{t.label}</Text>
-              {t.badge != null && t.badge > 0 && (
-                <View style={[styles.tabBadge, t.key === "pending" && styles.tabBadgePending]}>
-                  <Text style={styles.tabBadgeText}>{t.badge}</Text>
-                </View>
-              )}
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
+        <View style={styles.tabBarWrap}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabBarContent}>
+            {TABS.map((t) => (
+              <TouchableOpacity
+                key={t.key}
+                style={[styles.tabBtn, tab === t.key && styles.tabBtnActive]}
+                onPress={() => setTab(t.key)}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.tabBtnText, tab === t.key && styles.tabBtnTextActive]}>{t.label}</Text>
+                {t.badge != null && t.badge > 0 && (
+                  <View style={[styles.tabBadge, t.key === "pending" && styles.tabBadgePending]}>
+                    <Text style={styles.tabBadgeText}>{t.badge}</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
 
         <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
 
@@ -436,12 +438,19 @@ const styles = StyleSheet.create({
   topRight: { flexDirection: "row", alignItems: "center", gap: 12 },
   userName: { fontSize: 14, color: P.muted, fontWeight: "500" },
   iconBtn: { padding: 8 },
-  tabBar: { backgroundColor: "#FFFFFF", borderBottomWidth: 1, borderBottomColor: P.border, height: 58 },
-  tabBarContent: { paddingHorizontal: 16, paddingVertical: 10, gap: 8, flexDirection: "row", alignItems: "center" },
+  tabBarWrap: {
+    height: 58, flexShrink: 0,
+    backgroundColor: "#FFFFFF", borderBottomWidth: 1, borderBottomColor: P.border,
+  },
+  tabBarContent: {
+    paddingHorizontal: 16, gap: 8, flexDirection: "row",
+    alignItems: "center", height: 58,
+  },
   tabBtn: {
     flexDirection: "row", alignItems: "center", gap: 6,
-    paddingVertical: 9, paddingHorizontal: 16, borderRadius: 20,
+    paddingVertical: 8, paddingHorizontal: 16, borderRadius: 20,
     backgroundColor: "#F7F4F0", borderWidth: 1, borderColor: P.border,
+    height: 38,
   },
   tabBtnActive: { backgroundColor: P.copper, borderColor: P.copper },
   tabBtnText: { fontSize: 14, fontWeight: "600", color: P.muted },
