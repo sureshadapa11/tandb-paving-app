@@ -1,7 +1,9 @@
 import React, { useRef, useEffect, useCallback, useState } from "react";
 import {
   View, Text, StyleSheet, ScrollView, Pressable, Linking, Animated, Platform, Modal,
+  TouchableOpacity,
 } from "react-native";
+import QRCode from "react-qr-code";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
@@ -405,21 +407,49 @@ export default function Home() {
               ))}
             </View>
           </View>
-          <View style={{ flexDirection: isDesktop ? "row" : "column", gap: 12, marginTop: S.lg }}>
-            <Btn
-              testID="home-reviews-all"
-              label="Read More Reviews"
-              variant="outline"
-              onPress={() => router.push("/(tabs)/reviews" as any)}
-              style={{ alignSelf: isDesktop ? "flex-start" : undefined }}
-            />
-            <Btn
-              testID="home-reviews-leave"
-              label="⭐  Leave Us a Review"
-              variant="primary"
-              onPress={() => router.push("/review" as any)}
-              style={{ alignSelf: isDesktop ? "flex-start" : undefined }}
-            />
+          <Btn
+            testID="home-reviews-all"
+            label="Read More Reviews"
+            variant="outline"
+            onPress={() => router.push("/(tabs)/reviews" as any)}
+            style={{ marginTop: S.lg, alignSelf: isDesktop ? "flex-start" : undefined }}
+          />
+
+          {/* ── Review CTA card ── */}
+          <View style={[styles.reviewCta, (isDesktop || isTablet) && styles.reviewCtaDesktop]}>
+            {/* QR code — desktop only */}
+            {(isDesktop || isTablet) && (
+              <View style={styles.reviewQrBox}>
+                <QRCode
+                  value="https://frontend-khaki-tau-70.vercel.app/review"
+                  size={110}
+                  fgColor="#1A2A3A"
+                  bgColor="#FFFFFF"
+                />
+              </View>
+            )}
+
+            {/* Text + button */}
+            <View style={styles.reviewCtaBody}>
+              <View style={styles.reviewCtaStars}>
+                {[1,2,3,4,5].map((n) => (
+                  <Ionicons key={n} name="star" size={18} color="#E0A732" />
+                ))}
+              </View>
+              <Text style={styles.reviewCtaTitle}>Happy with our work?</Text>
+              <Text style={styles.reviewCtaSub}>
+                Share your experience and help other homeowners find a paving company they can trust.
+                {(isDesktop || isTablet) ? " Scan the QR code with your phone or tap the button below." : ""}
+              </Text>
+              <TouchableOpacity
+                style={styles.reviewCtaBtn}
+                onPress={() => router.push("/review" as any)}
+                activeOpacity={0.85}
+              >
+                <Ionicons name="star-outline" size={16} color="#FFFFFF" />
+                <Text style={styles.reviewCtaBtnText}>Leave Us a Review</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </MaxWidth>
       </View>
@@ -704,6 +734,28 @@ const styles = StyleSheet.create({
   quoteAvatarText: { color: "#fff", fontWeight: "900", fontSize: 15 },
   quoteName: { fontSize: 13, fontWeight: "800", color: C.ink },
   quoteJob: { fontSize: 11.5, color: C.muted },
+  reviewCta: {
+    marginTop: S.xl, backgroundColor: "#1A2A3A", borderRadius: R.xl,
+    padding: S.lg, gap: S.md,
+    borderWidth: 1, borderColor: "rgba(181,101,29,0.4)",
+  },
+  reviewCtaDesktop: { flexDirection: "row", alignItems: "center", gap: S.xl, padding: S.xl },
+  reviewQrBox: {
+    padding: 12, backgroundColor: "#FFFFFF", borderRadius: 12,
+    alignSelf: "flex-start", flexShrink: 0,
+    borderWidth: 3, borderColor: "#B5651D",
+  },
+  reviewCtaBody: { flex: 1, gap: 8 },
+  reviewCtaStars: { flexDirection: "row", gap: 3 },
+  reviewCtaTitle: { fontSize: 20, fontWeight: "800", color: "#FFFFFF", lineHeight: 26 },
+  reviewCtaSub: { fontSize: 13.5, color: "rgba(255,255,255,0.72)", lineHeight: 20 },
+  reviewCtaBtn: {
+    flexDirection: "row", alignItems: "center", gap: 8,
+    backgroundColor: "#B5651D", borderRadius: 10,
+    paddingVertical: 13, paddingHorizontal: 22,
+    alignSelf: "flex-start", marginTop: 4,
+  },
+  reviewCtaBtnText: { color: "#FFFFFF", fontSize: 14, fontWeight: "800" },
   platformsRow: { alignItems: "center" },
   platformsLabel: { fontSize: 11, fontWeight: "800", letterSpacing: 1.5, color: C.muted, textAlign: "center", marginBottom: S.md },
   platforms: { flexDirection: "row", flexWrap: "wrap", gap: S.sm, justifyContent: "center" },
