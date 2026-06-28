@@ -119,11 +119,11 @@ class TaskBody(BaseModel):
 class QuoteBody(BaseModel):
     project_id: str = ""
     client_name: str
-    title: str
-    line_items: List[dict] = []  # {desc, qty, unit_price}
+    title: str = ""
+    project_type: str = ""
+    line_items: List[dict] = []
     tax_percent: float = 0
-    type: str = "quote"  # quote | invoice
-    status: str = "draft"  # draft | sent | paid
+    status: str = "draft"  # draft | sent | paid | rejected
 
 
 class WorkerBody(BaseModel):
@@ -151,9 +151,17 @@ class InventoryBody(BaseModel):
 
 
 class PhotoBody(BaseModel):
-    project_id: str
-    image: str  # base64
+    project_id: str = ""
+    image_base64: str
     caption: str = ""
+
+
+class TestimonialBody(BaseModel):
+    name: str
+    town: str = ""
+    job: str = ""
+    stars: int = 5
+    text: str
 
 
 class ChatBody(BaseModel):
@@ -404,14 +412,35 @@ async def create_photo(body: PhotoBody, user=Depends(get_current_user)):
 
 
 @api_router.get("/photos")
-async def list_photos(project_id: str, user=Depends(get_current_user)):
-    docs = await db.photos.find({"project_id": project_id}).sort("created_at", -1).to_list(500)
+async def list_photos(user=Depends(get_current_user)):
+    docs = await db.photos.find({"owner_id": user["id"]}).sort("created_at", -1).to_list(500)
     return [clean(d) for d in docs]
 
 
 @api_router.delete("/photos/{pid}")
 async def delete_photo(pid: str, user=Depends(get_current_user)):
-    await db.photos.delete_one({"id": pid})
+    await db.photos.delete_one({"id": pid, "owner_id": user["id"]})
+    return {"ok": True}
+
+
+# ---------- Testimonials ----------
+@api_router.post("/testimonials")
+async def create_testimonial(body: TestimonialBody, user=Depends(get_current_user)):
+    doc = body.dict()
+    doc.update({"id": oid(), "owner_id": user["id"], "created_at": now_iso()})
+    await db.testimonials.insert_one(doc)
+    return clean(doc)
+
+
+@api_router.get("/testimonials")
+async def list_testimonials(user=Depends(get_current_user)):
+    docs = await db.testimonials.find({"owner_id": user["id"]}).sort("created_at", -1).to_list(200)
+    return [clean(d) for d in docs]
+
+
+@api_router.delete("/testimonials/{tid}")
+async def delete_testimonial(tid: str, user=Depends(get_current_user)):
+    await db.testimonials.delete_one({"id": tid, "owner_id": user["id"]})
     return {"ok": True}
 
 
