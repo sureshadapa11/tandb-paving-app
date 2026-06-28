@@ -18,6 +18,8 @@ import {
 import { useResponsive } from "@/src/hooks/use-responsive";
 import { useActiveSection } from "@/src/contexts/nav-context";
 
+const BACKEND = process.env.EXPO_PUBLIC_BACKEND_URL ?? "";
+
 // Ordered list used for scroll tracking (bottom-up so first match wins)
 const SECTION_ORDER = ["faq", "areas", "reviews", "gallery", "process", "services"];
 
@@ -59,6 +61,34 @@ export default function Home() {
   const sectionY = useRef<Record<string, number>>({});
   const { setActiveSection } = useActiveSection();
 
+  const [settings, setSettings] = useState<any>(null);
+  useEffect(() => {
+    fetch(`${BACKEND}/api/site-settings`)
+      .then((r) => r.ok ? r.json() : null)
+      .then((d) => { if (d) setSettings(d); })
+      .catch(() => {});
+  }, []);
+
+  const biz = settings ? {
+    ...BIZ,
+    name: settings.biz_name || BIZ.name,
+    tagline: settings.tagline || BIZ.tagline,
+    since: settings.since || BIZ.since,
+    phone: settings.phone || BIZ.phone,
+    mobile: settings.mobile || BIZ.mobile,
+    email: settings.email || BIZ.email,
+    hours: settings.hours || BIZ.hours,
+    area: settings.area || BIZ.area,
+  } : BIZ;
+
+  const faqs = (settings?.faqs?.length) ? settings.faqs : FAQS;
+
+  const slides = SLIDES.map((s, i) => ({
+    ...s,
+    headline: settings?.hero_slides?.[i]?.headline || s.headline,
+    sub: settings?.hero_slides?.[i]?.sub || s.sub,
+  }));
+
   const handleScroll = useCallback((e: any) => {
     const y = e.nativeEvent.contentOffset.y;
     for (const key of SECTION_ORDER) {
@@ -94,7 +124,7 @@ export default function Home() {
 
   const [lightbox, setLightbox] = useState<{ img: any; label: string; town: string } | null>(null);
 
-  const call = () => Linking.openURL(`tel:${BIZ.mobile.replace(/\s/g, "")}`);
+  const call = () => Linking.openURL(`tel:${biz.mobile.replace(/\s/g, "")}`);
   const goQuote = () => router.push("/(tabs)/quote" as any);
 
   const doScroll = useCallback((key: string) => {
@@ -138,7 +168,7 @@ export default function Home() {
         {/* Crossfading background */}
         <Animated.View style={[StyleSheet.absoluteFill, { opacity: fadeAnim }]}>
           <Image
-            source={(!isDesktop && !isTablet && (SLIDES[slideIdx] as any).imgMobile) || SLIDES[slideIdx].img}
+            source={(!isDesktop && !isTablet && (slides[slideIdx] as any).imgMobile) || slides[slideIdx].img}
             style={StyleSheet.absoluteFill}
             contentFit="cover"
           />
@@ -174,12 +204,12 @@ export default function Home() {
             {/* Eyebrow badge */}
             <View style={styles.heroBadge}>
               <Ionicons name="shield-checkmark" size={13} color={C.accent} />
-              <Text style={styles.heroBadgeText}>{BIZ.since.toUpperCase()}</Text>
+              <Text style={styles.heroBadgeText}>{biz.since.toUpperCase()}</Text>
             </View>
 
             {/* Headline */}
             <Text style={[styles.heroTitle, { fontSize: heroTitleSize, lineHeight: heroTitleSize * 1.12 }]}>
-              {SLIDES[slideIdx].headline}
+              {slides[slideIdx].headline}
             </Text>
 
             {/* Decorative rule */}
@@ -190,7 +220,7 @@ export default function Home() {
             </View>
 
             {/* Subtext */}
-            <Text style={styles.heroSub}>{SLIDES[slideIdx].sub}</Text>
+            <Text style={styles.heroSub}>{slides[slideIdx].sub}</Text>
 
             {/* Buttons */}
             <View style={[styles.heroBtns, isDesktop && { flexDirection: "row", gap: S.lg, justifyContent: "center" }]}>
@@ -203,7 +233,7 @@ export default function Home() {
               />
               <Pressable onPress={call} style={[styles.heroCallBtn, !isDesktop && { marginTop: S.md, alignSelf: "center" }]}>
                 <Ionicons name="call" size={15} color={C.surface} />
-                <Text style={styles.heroCallText}>{BIZ.phone}</Text>
+                <Text style={styles.heroCallText}>{biz.phone}</Text>
               </Pressable>
             </View>
           </Animated.View>
@@ -211,7 +241,7 @@ export default function Home() {
 
         {/* Slide counter + tick marks at bottom */}
         <View style={styles.slideControls}>
-          {SLIDES.map((_, i) => (
+          {slides.map((_, i) => (
             <Pressable key={i} onPress={() => goSlide(i)} style={styles.slideTick}>
               <View style={[styles.tickBar, i === slideIdx && styles.tickBarActive]} />
             </Pressable>
@@ -463,7 +493,7 @@ export default function Home() {
           <Eyebrow>Coverage</Eyebrow>
           <SectionTitle>Areas We Cover</SectionTitle>
           <Text style={styles.areasSub}>
-            Proudly serving {BIZ.area}. Call us to confirm your postcode.
+            Proudly serving {biz.area}. Call us to confirm your postcode.
           </Text>
           <View style={styles.areaGrid}>
             {AREAS.map((a) => (
@@ -484,7 +514,7 @@ export default function Home() {
         <MaxWidth>
           <Eyebrow>FAQ</Eyebrow>
           <SectionTitle>Common Questions</SectionTitle>
-          <FaqAccordion faqs={FAQS} isDesktop={isDesktop} />
+          <FaqAccordion faqs={faqs} isDesktop={isDesktop} />
         </MaxWidth>
       </View>
 
@@ -497,7 +527,7 @@ export default function Home() {
                 Ready for a free, no-obligation quote?
               </Text>
               <Text style={styles.ctaSub}>
-                Covering {BIZ.area} · {BIZ.hours}
+                Covering {biz.area} · {biz.hours}
               </Text>
             </View>
             <View style={[styles.ctaActions, isDesktop && { flexDirection: "row", gap: S.lg, alignItems: "center" }]}>
@@ -510,7 +540,7 @@ export default function Home() {
               />
               <Pressable testID="cta-call-btn" onPress={call} style={styles.ctaCall}>
                 <Ionicons name="call" size={16} color={C.ink} />
-                <Text style={styles.ctaCallText}>{BIZ.phone}  ·  {BIZ.mobile}</Text>
+                <Text style={styles.ctaCallText}>{biz.phone}  ·  {biz.mobile}</Text>
               </Pressable>
             </View>
           </View>
@@ -524,7 +554,7 @@ export default function Home() {
             <View>
               <Image source={require("../../assets/images/logo.jpg")} style={styles.footerLogo} contentFit="contain" />
               <Text style={styles.footerDesc}>
-                Expert driveways, patios & paths across {BIZ.area}.{"\n"}Family-run. Trusted since 2009.
+                Expert driveways, patios & paths across {biz.area}.{"\n"}Family-run. Trusted since 2009.
               </Text>
             </View>
             {isDesktop && (
@@ -537,10 +567,10 @@ export default function Home() {
                 </View>
                 <View>
                   <Text style={styles.footerColTitle}>CONTACT</Text>
-                  <Text style={styles.footerLink}>{BIZ.phone}</Text>
-                  <Text style={styles.footerLink}>{BIZ.mobile}</Text>
-                  <Text style={styles.footerLink}>{BIZ.email}</Text>
-                  <Text style={styles.footerLink}>{BIZ.hours}</Text>
+                  <Text style={styles.footerLink}>{biz.phone}</Text>
+                  <Text style={styles.footerLink}>{biz.mobile}</Text>
+                  <Text style={styles.footerLink}>{biz.email}</Text>
+                  <Text style={styles.footerLink}>{biz.hours}</Text>
                 </View>
               </>
             )}

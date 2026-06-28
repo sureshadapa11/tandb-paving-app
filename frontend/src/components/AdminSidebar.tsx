@@ -10,6 +10,7 @@ const PAGE_TITLES: Record<string, string> = {
   "/admin/quotes":      "Quotes",
   "/admin/gallery":     "Gallery",
   "/admin/testimonials":"Testimonials",
+  "/admin/settings":    "Settings",
 };
 
 const A = {
@@ -32,6 +33,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: "Quotes", icon: "document-text-outline", route: "/admin/quotes" },
   { label: "Gallery", icon: "images-outline", route: "/admin/gallery" },
   { label: "Testimonials", icon: "star-outline", route: "/admin/testimonials" },
+  { label: "Settings", icon: "settings-outline", route: "/admin/settings" },
 ];
 
 type Props = {

@@ -172,6 +172,21 @@ class ReviewSubmitBody(BaseModel):
     text: str
 
 
+class SiteSettingsBody(BaseModel):
+    biz_name: str = "T&B Paving"
+    tagline: str = "Driveways · Patios · Paths"
+    since: str = "Trusted Since 2009"
+    headline: str = "Expert Driveways, Patios & Paths Built to Last"
+    intro: str = "From your first call to a finished driveway, we keep things straightforward, transparent and stress-free at every stage."
+    phone: str = "01376 618683"
+    mobile: str = "07717 315528"
+    email: str = "bbirdpaving@gmail.com"
+    hours: str = "Mon–Sat: 7:30am – 6:00pm"
+    area: str = "Essex & Suffolk"
+    hero_slides: List[dict] = []
+    faqs: List[dict] = []
+
+
 class ChatBody(BaseModel):
     session_id: str
     message: str
@@ -472,6 +487,26 @@ async def approve_testimonial(tid: str, user=Depends(get_current_user)):
 @api_router.delete("/testimonials/{tid}")
 async def delete_testimonial(tid: str, user=Depends(get_current_user)):
     await db.testimonials.delete_one({"id": tid})
+    return {"ok": True}
+
+
+# ---------- Site Settings ----------
+@api_router.get("/site-settings")
+async def get_site_settings():
+    """Public — no auth. Website reads this to render dynamic content."""
+    doc = await db.site_settings.find_one({})
+    if not doc:
+        return {}
+    return clean(doc)
+
+
+@api_router.put("/site-settings")
+async def update_site_settings(body: SiteSettingsBody, user=Depends(get_current_user)):
+    await db.site_settings.update_one(
+        {"owner_id": user["id"]},
+        {"$set": {**body.dict(), "owner_id": user["id"], "updated_at": now_iso()}},
+        upsert=True,
+    )
     return {"ok": True}
 
 
