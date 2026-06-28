@@ -1,13 +1,13 @@
-import React, { useRef, useEffect, useCallback } from "react";
+import React, { useRef, useEffect, useCallback, useState } from "react";
 import {
-  View, Text, StyleSheet, ScrollView, Pressable, Linking, Animated,
+  View, Text, StyleSheet, ScrollView, Pressable, Linking, Animated, Platform, Modal,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { C, S, R, SHADOW } from "@/src/theme";
-import { Btn, Eyebrow, SectionTitle, Logo, Stars, MaxWidth } from "@/src/components/ui";
+import { Btn, Eyebrow, SectionTitle, Stars, MaxWidth } from "@/src/components/ui";
 import { Tilt3D } from "@/src/components/Card3D";
 import {
   BIZ, STATS, TRUST, SERVICES, STEPS,
@@ -22,6 +22,7 @@ const SECTION_ORDER = ["faq", "areas", "reviews", "gallery", "process", "service
 const SLIDES = [
   {
     img: require("../../assets/images/hero-excavator.webp"),
+    imgMobile: require("../../assets/images/hero-mobile.jpg"),
     headline: "Professional Groundworks &\nExpert Installation",
     sub: "From first call to finished driveway — straightforward, transparent and stress-free.",
   },
@@ -89,10 +90,16 @@ export default function Home() {
     });
   };
 
+  const [lightbox, setLightbox] = useState<{ img: any; label: string; town: string } | null>(null);
+
   const call = () => Linking.openURL(`tel:${BIZ.mobile.replace(/\s/g, "")}`);
   const goQuote = () => router.push("/(tabs)/quote" as any);
 
   const doScroll = useCallback((key: string) => {
+    if (key === "home") {
+      scrollRef.current?.scrollTo({ y: 0, animated: true });
+      return;
+    }
     const y = sectionY.current[key];
     if (y !== undefined) {
       scrollRef.current?.scrollTo({ y: y - 16, animated: true });
@@ -109,10 +116,13 @@ export default function Home() {
     sectionY.current[key] = e.nativeEvent.layout.y;
   };
 
-  const heroH = isDesktop ? 720 : isTablet ? 580 : 520;
-  const heroTitleSize = isDesktop ? 54 : isTablet ? 44 : 36;
+  const heroH = Platform.OS === "web"
+    ? ("calc(100vh - 64px)" as any)
+    : isDesktop ? 620 : isTablet ? 520 : 460;
+  const heroTitleSize = isDesktop ? 46 : isTablet ? 38 : 32;
 
   return (
+    <>
     <ScrollView
       ref={scrollRef}
       showsVerticalScrollIndicator={false}
@@ -125,12 +135,16 @@ export default function Home() {
       <View style={[styles.hero, { height: heroH }]}>
         {/* Crossfading background */}
         <Animated.View style={[StyleSheet.absoluteFill, { opacity: fadeAnim }]}>
-          <Image source={SLIDES[slideIdx].img} style={StyleSheet.absoluteFill} contentFit="cover" />
+          <Image
+            source={(!isDesktop && !isTablet && (SLIDES[slideIdx] as any).imgMobile) || SLIDES[slideIdx].img}
+            style={StyleSheet.absoluteFill}
+            contentFit="cover"
+          />
         </Animated.View>
-        {/* Cinematic overlay — even dark film */}
+        {/* Light top, dark bottom scrim for text readability */}
         <LinearGradient
-          colors={["rgba(8,5,3,0.52)", "rgba(8,5,3,0.38)", "rgba(8,5,3,0.72)"]}
-          locations={[0, 0.45, 1]}
+          colors={["rgba(0,0,0,0.10)", "rgba(0,0,0,0.15)", "rgba(0,0,0,0.55)", "rgba(0,0,0,0.75)"]}
+          locations={[0, 0.45, 0.75, 1]}
           style={StyleSheet.absoluteFill}
         />
 
@@ -152,15 +166,13 @@ export default function Home() {
           </Pressable>
         )}
 
-        {/* Centered content */}
-        <MaxWidth style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-          <Animated.View style={[styles.heroContent, { paddingHorizontal: hPad, opacity: fadeAnim }]}>
-            {/* Classic eyebrow badge */}
+        {/* Content sits in lower third, just above the slide dots */}
+        <MaxWidth style={{ flex: 1, justifyContent: "flex-end", alignItems: "center" }}>
+          <Animated.View style={[styles.heroContent, { paddingHorizontal: hPad, paddingBottom: 56, opacity: fadeAnim }]}>
+            {/* Eyebrow badge */}
             <View style={styles.heroBadge}>
-              <View style={styles.heroBadgeLine} />
-              <Ionicons name="shield-checkmark" size={12} color={C.accent} />
+              <Ionicons name="shield-checkmark" size={13} color={C.accent} />
               <Text style={styles.heroBadgeText}>{BIZ.since.toUpperCase()}</Text>
-              <View style={styles.heroBadgeLine} />
             </View>
 
             {/* Headline */}
@@ -243,47 +255,27 @@ export default function Home() {
           <Eyebrow>What We Offer</Eyebrow>
           <SectionTitle>Our Paving Services</SectionTitle>
           <View style={[
-            { marginTop: S.lg, flexDirection: "row", flexWrap: "wrap" },
-            isDesktop ? { gap: S.md } : { gap: S.sm },
+            styles.svGrid,
+            isDesktop ? { marginTop: S.lg } : { marginTop: S.md },
           ]}>
-            {SERVICES.slice(0, isDesktop ? 6 : 4).map((sv) => (
-              <Tilt3D
+            {SERVICES.map((sv) => (
+              <View
                 key={sv.id}
                 testID={`home-service-${sv.id}`}
                 style={[
-                  styles.svCard,
-                  isDesktop && { width: "31.5%" },
+                  styles.svRow,
+                  isDesktop && { width: "31%" },
                   (isTablet && !isDesktop) && { width: "48%" },
                   !isTablet && !isDesktop && { width: "100%" },
                 ]}
-                onPress={() => router.push("/(tabs)/services" as any)}
-                max={8}
               >
-                <Image source={sv.bgImg} style={StyleSheet.absoluteFill} contentFit="cover" />
-                <LinearGradient
-                  colors={["rgba(15,10,5,0.28)", "rgba(15,10,5,0.82)"]}
-                  style={StyleSheet.absoluteFill}
-                />
-                <View style={styles.svContent}>
-                  <View style={styles.svIcon}>
-                    <Ionicons name={sv.icon as any} size={20} color={C.accent} />
-                  </View>
-                  <Text style={styles.svTitle}>{sv.title}</Text>
-                  <Text style={styles.svDesc} numberOfLines={2}>{sv.desc}</Text>
+                <View style={styles.svIconWrap}>
+                  <Ionicons name={sv.icon as any} size={18} color={C.brand} />
                 </View>
-                <View style={styles.svChevron}>
-                  <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.7)" />
-                </View>
-              </Tilt3D>
+                <Text style={styles.svTitle}>{sv.title}</Text>
+              </View>
             ))}
           </View>
-          <Btn
-            testID="home-all-services"
-            label="See All 11 Services"
-            variant="outline"
-            onPress={() => router.push("/(tabs)/services" as any)}
-            style={{ marginTop: S.lg, alignSelf: isDesktop ? "flex-start" : undefined }}
-          />
         </MaxWidth>
       </View>
 
@@ -331,7 +323,7 @@ export default function Home() {
               <Tilt3D
                 key={i}
                 testID={`home-gallery-${i}`}
-                onPress={() => router.push("/(tabs)/gallery" as any)}
+                onPress={() => setLightbox(g)}
                 style={[
                   styles.galleryCard,
                   isDesktop && { width: "31.5%" },
@@ -351,17 +343,16 @@ export default function Home() {
                 </View>
               </Tilt3D>
             ))}
-            {/* More coming soon card */}
+            {/* Logo card */}
             <Pressable
               onPress={() => router.push("/(tabs)/gallery" as any)}
               style={[
-                styles.galleryCard, styles.galleryComingSoon,
+                styles.galleryCard, styles.galleryLogoCard,
                 isDesktop && { width: "31.5%", height: isDesktop ? 200 + 46 : 140 + 46 },
                 !isDesktop && { width: "47%", height: 140 + 46 },
               ]}
             >
-              <Ionicons name="images-outline" size={28} color={C.muted} />
-              <Text style={styles.galleryComingTitle}>More Photos{"\n"}Coming Soon</Text>
+              <Image source={require("../../assets/images/logo.jpg")} style={styles.galleryLogoImg} contentFit="contain" />
             </Pressable>
           </View>
           <Btn
@@ -492,7 +483,7 @@ export default function Home() {
         <MaxWidth style={{ paddingHorizontal: hPad }}>
           <View style={[styles.footerInner, isDesktop && styles.footerInnerDesktop]}>
             <View>
-              <Logo size={42} />
+              <Image source={require("../../assets/images/logo.jpg")} style={styles.footerLogo} contentFit="contain" />
               <Text style={styles.footerDesc}>
                 Expert driveways, patios & paths across {BIZ.area}.{"\n"}Family-run. Trusted since 2009.
               </Text>
@@ -524,6 +515,23 @@ export default function Home() {
         </MaxWidth>
       </View>
     </ScrollView>
+
+    {/* ── LIGHTBOX ── */}
+    <Modal visible={!!lightbox} transparent animationType="fade" onRequestClose={() => setLightbox(null)}>
+      <Pressable style={styles.lbBackdrop} onPress={() => setLightbox(null)}>
+        <View style={styles.lbBox}>
+          <Image source={lightbox?.img} style={styles.lbImg} contentFit="contain" />
+          <View style={styles.lbCaption}>
+            <Text style={styles.lbLabel}>{lightbox?.label}</Text>
+            <Text style={styles.lbTown}>{lightbox?.town}</Text>
+          </View>
+          <Pressable style={styles.lbClose} onPress={() => setLightbox(null)}>
+            <Ionicons name="close" size={22} color="#fff" />
+          </Pressable>
+        </View>
+      </Pressable>
+    </Modal>
+    </>
   );
 }
 
@@ -575,24 +583,28 @@ const styles = StyleSheet.create({
   },
   tickBarActive: { width: 48, backgroundColor: C.accent },
   heroBadge: {
-    flexDirection: "row", alignItems: "center", gap: S.sm,
-    marginBottom: S.lg,
+    flexDirection: "row", alignItems: "center", gap: 6,
+    backgroundColor: "rgba(0,0,0,0.45)",
+    borderWidth: 1, borderColor: "rgba(255,255,255,0.15)",
+    paddingHorizontal: 14, paddingVertical: 6,
+    borderRadius: 99,
+    marginBottom: S.md,
+    alignSelf: "center",
   },
-  heroBadgeLine: { flex: 1, height: 1, backgroundColor: "rgba(255,255,255,0.35)", maxWidth: 40 },
-  heroBadgeText: { color: C.accent, fontWeight: "700", fontSize: 11, letterSpacing: 2.5 },
+  heroBadgeText: { color: "#fff", fontWeight: "700", fontSize: 11, letterSpacing: 2 },
   heroTitle: {
     color: "#FFFFFF",
-    fontWeight: "800",
-    letterSpacing: 0.5,
+    fontWeight: "700",
+    letterSpacing: 0.3,
     textAlign: "center",
     maxWidth: 780,
-    textShadowColor: "rgba(0,0,0,0.4)",
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 8,
+    textShadowColor: "rgba(0,0,0,0.25)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 6,
   },
   heroRule: {
     flexDirection: "row", alignItems: "center", gap: S.sm,
-    marginTop: S.lg, marginBottom: S.md,
+    marginTop: S.md, marginBottom: S.sm,
   },
   heroRuleLine: { flex: 1, height: 1, backgroundColor: "rgba(255,255,255,0.3)", maxWidth: 80 },
   heroRuleDiamond: {
@@ -601,14 +613,15 @@ const styles = StyleSheet.create({
     transform: [{ rotate: "45deg" }],
   },
   heroSub: {
-    color: "rgba(255,255,255,0.85)",
+    color: "rgba(255,255,255,0.80)",
     fontSize: 15,
     lineHeight: 24,
     textAlign: "center",
-    maxWidth: 520,
+    maxWidth: 480,
     letterSpacing: 0.2,
+    fontWeight: "400",
   },
-  heroBtns: { marginTop: S.xl, alignItems: "center" },
+  heroBtns: { marginTop: S.lg, alignItems: "center" },
   heroCallBtn: {
     flexDirection: "row", alignItems: "center", gap: 8,
     borderWidth: 1, borderColor: "rgba(255,255,255,0.45)",
@@ -630,26 +643,22 @@ const styles = StyleSheet.create({
     paddingHorizontal: S.md, paddingVertical: 9, borderRadius: R.pill,
   },
   trustText: { fontSize: 12, fontWeight: "700", color: C.ink },
-  svCard: {
-    borderRadius: R.lg, overflow: "hidden",
-    height: 160, justifyContent: "flex-end",
-    ...SHADOW.card,
+  svGrid: {
+    flexDirection: "row", flexWrap: "wrap", gap: 8,
   },
-  svContent: { padding: S.md, flex: 1, justifyContent: "flex-end" },
-  svIcon: {
-    width: 36, height: 36, borderRadius: R.sm,
-    backgroundColor: "rgba(255,255,255,0.18)",
-    alignItems: "center", justifyContent: "center",
-    marginBottom: S.sm,
+  svRow: {
+    flexDirection: "row", alignItems: "center", gap: 10,
+    paddingVertical: 10, paddingHorizontal: 12,
+    backgroundColor: C.surface,
+    borderWidth: 1, borderColor: C.border,
+    borderRadius: R.md,
   },
-  svTitle: { fontSize: 15, fontWeight: "800", color: "#fff" },
-  svDesc: { fontSize: 12, color: "rgba(255,255,255,0.82)", marginTop: 3, lineHeight: 17 },
-  svChevron: {
-    position: "absolute", right: S.md, top: "50%",
-    width: 28, height: 28, borderRadius: 14,
-    backgroundColor: "rgba(255,255,255,0.18)",
+  svIconWrap: {
+    width: 32, height: 32, borderRadius: R.sm,
+    backgroundColor: `${C.brand}14`,
     alignItems: "center", justifyContent: "center",
   },
+  svTitle: { fontSize: 13, fontWeight: "700", color: C.ink },
   lightBand: { backgroundColor: C.surfaceAlt },
   step: { flexDirection: "row", gap: S.md, alignItems: "flex-start" },
   stepNum: {
@@ -668,11 +677,11 @@ const styles = StyleSheet.create({
   galleryImg: { width: "100%", backgroundColor: C.surfaceAlt },
   galleryLabel: { fontSize: 13, fontWeight: "800", color: C.ink },
   galleryTown: { fontSize: 11, color: C.muted, marginTop: 1 },
-  galleryComingSoon: {
-    alignItems: "center", justifyContent: "center", gap: S.sm,
-    borderStyle: "dashed",
+  galleryLogoCard: {
+    alignItems: "center", justifyContent: "center",
+    backgroundColor: "#1a2a3a",
   },
-  galleryComingTitle: { fontSize: 13, fontWeight: "700", color: C.muted, textAlign: "center", lineHeight: 19 },
+  galleryLogoImg: { width: "85%", height: "85%" },
   quoteCard: {
     backgroundColor: C.surface, borderRadius: R.xl,
     padding: S.lg, borderWidth: 1, borderColor: C.border, ...SHADOW.card,
@@ -723,6 +732,7 @@ const styles = StyleSheet.create({
   footerOuter: { backgroundColor: C.ink },
   footerInner: { paddingVertical: S["2xl"] },
   footerInnerDesktop: { flexDirection: "row", justifyContent: "space-between", gap: S["2xl"] },
+  footerLogo: { width: 80, height: 80, borderRadius: 40 },
   footerDesc: { color: "rgba(255,255,255,0.65)", fontSize: 13, marginTop: S.md, lineHeight: 20, maxWidth: 320 },
   footerColTitle: { color: "rgba(255,255,255,0.4)", fontSize: 11, fontWeight: "800", letterSpacing: 1.5, marginBottom: S.sm },
   footerLink: { color: "rgba(255,255,255,0.7)", fontSize: 13, fontWeight: "600", marginBottom: 6 },
@@ -733,4 +743,19 @@ const styles = StyleSheet.create({
   },
   footerCopy: { color: "rgba(255,255,255,0.4)", fontSize: 11 },
   footerAdmin: { color: "rgba(255,255,255,0.4)", fontSize: 11, textDecorationLine: "underline" },
+  lbBackdrop: {
+    flex: 1, backgroundColor: "rgba(0,0,0,0.92)",
+    alignItems: "center", justifyContent: "center",
+  },
+  lbBox: { width: "92%", maxWidth: 860, position: "relative" },
+  lbImg: { width: "100%", aspectRatio: 4 / 3, borderRadius: 12 },
+  lbCaption: { marginTop: 12, alignItems: "center" },
+  lbLabel: { color: "#fff", fontSize: 15, fontWeight: "700" },
+  lbTown: { color: "rgba(255,255,255,0.55)", fontSize: 13, marginTop: 2 },
+  lbClose: {
+    position: "absolute", top: -14, right: -14,
+    width: 36, height: 36, borderRadius: 18,
+    backgroundColor: "rgba(255,255,255,0.15)",
+    alignItems: "center", justifyContent: "center",
+  },
 });

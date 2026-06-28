@@ -10,7 +10,7 @@ export const BIZ = {
   mobile: "07717 315528",
   email: "bbirdpaving@gmail.com",
   hours: "Mon–Sat: 7:30am – 6:00pm",
-  area: "Manchester & the North West",
+  area: "Essex & Suffolk",
 };
 
 export const STATS = [
@@ -81,9 +81,10 @@ export const TESTIMONIALS = [
 export const REVIEW_PLATFORMS = ["Checkatrade", "Google", "Facebook", "Yell", "Trustpilot"];
 
 export const AREAS = [
-  "Manchester", "Salford", "Bolton", "Bury", "Wigan", "Oldham", "Rochdale",
-  "Stockport", "Trafford", "Tameside", "Leigh", "Warrington", "Chorley",
-  "Preston", "Blackburn", "Burnley", "Altrincham", "Sale", "Stretford", "Accrington",
+  "Chelmsford", "Colchester", "Braintree", "Brentwood", "Basildon", "Harlow",
+  "Epping", "Witham", "Maldon", "Billericay", "Rayleigh", "Saffron Walden",
+  "Ipswich", "Bury St Edmunds", "Sudbury", "Felixstowe", "Woodbridge",
+  "Stowmarket", "Newmarket", "Haverhill", "Lowestoft", "Clacton-on-Sea",
 ];
 
 export const FAQS = [
@@ -91,6 +92,6 @@ export const FAQS = [
   { q: "Do you offer a guarantee?", a: "Yes — every installation comes with our 10-year workmanship guarantee for complete peace of mind." },
   { q: "Can you match my existing paving?", a: "Absolutely. We'll source materials to complement your home and any existing surfaces." },
   { q: "Do I need planning permission?", a: "Most projects don't, especially with permeable surfaces. We'll advise you during your free site survey." },
-  { q: "Which areas do you cover?", a: "All of Manchester and the North West. Check our coverage list or call us to confirm your area." },
+  { q: "Which areas do you cover?", a: "All of Essex and Suffolk. Check our coverage list or call us to confirm your area." },
   { q: "How much does a new driveway cost?", a: "It depends on size, materials and groundwork. Try our instant AI estimate, or book a free, no-obligation site survey for an exact price." },
 ];
