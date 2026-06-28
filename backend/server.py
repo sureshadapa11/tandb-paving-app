@@ -576,21 +576,21 @@ async def delete_hero_image(slot: int, user=Depends(get_current_user)):
 # ---------- Dashboard ----------
 @api_router.get("/dashboard")
 async def dashboard(user=Depends(get_current_user)):
-    projects = await db.projects.find({"owner_id": user["id"]}).to_list(1000)
-    active = len([p for p in projects if p.get("status") == "active"])
-    workers = await db.workers.count_documents({"owner_id": user["id"]})
-    quotes = await db.quotes.find({"owner_id": user["id"]}).to_list(1000)
-    pending_quotes = len([q for q in quotes if q.get("status") != "paid"])
-    revenue = sum(q.get("total", 0) for q in quotes if q.get("status") == "paid")
-    inv = await db.inventory.find({"owner_id": user["id"]}).to_list(1000)
-    low_stock = len([i for i in inv if i.get("quantity", 0) <= i.get("threshold", 0)])
+    enqs = await db.enquiries.find({"owner_id": user["id"]}).to_list(5000)
+    new_enqs = len([e for e in enqs if e.get("status") == "new"])
+    quotes = await db.quotes.find({"owner_id": user["id"]}).to_list(5000)
+    draft_quotes = len([q for q in quotes if q.get("status") == "draft"])
+    reviews = await db.reviews.find({"owner_id": user["id"]}).to_list(5000)
+    pending_reviews = len([r for r in reviews if not r.get("approved", False)])
+    approved_reviews = len([r for r in reviews if r.get("approved", False)])
+    gallery_photos = await db.gallery.count_documents({"owner_id": user["id"]})
     return {
-        "active_projects": active,
-        "total_projects": len(projects),
-        "workers": workers,
-        "pending_quotes": pending_quotes,
-        "revenue": round(revenue, 2),
-        "low_stock": low_stock,
+        "new_enquiries": new_enqs,
+        "total_enquiries": len(enqs),
+        "draft_quotes": draft_quotes,
+        "pending_reviews": pending_reviews,
+        "approved_reviews": approved_reviews,
+        "gallery_photos": gallery_photos,
     }
 
 

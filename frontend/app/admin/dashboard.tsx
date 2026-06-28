@@ -16,8 +16,9 @@ const P = {
 };
 
 type DashData = {
-  active_projects: number; total_projects: number;
-  workers: number; pending_quotes: number; revenue: number; low_stock: number;
+  new_enquiries: number; total_enquiries: number;
+  draft_quotes: number; pending_reviews: number;
+  approved_reviews: number; gallery_photos: number;
 };
 type Enquiry = {
   id: number; name: string; email: string; phone: string;
@@ -78,16 +79,17 @@ export default function Dashboard() {
 
   const handleLogout = async () => { await logout(); router.replace("/admin"); };
 
-  const newCount = enquiries.filter((e) => e.status === "new").length;
   const recent = [...enquiries].sort((a, b) =>
     new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
   ).slice(0, 5);
 
   const statCards = [
-    { label: "New Enquiries", value: newCount, icon: "mail", color: P.warning },
-    { label: "Total Enquiries", value: enquiries.length, icon: "people", color: "#3B82F6" },
-    { label: "Pending Quotes", value: dash?.pending_quotes ?? "—", icon: "document-text", color: P.copper },
-    { label: "Active Projects", value: dash?.active_projects ?? "—", icon: "construct", color: P.success },
+    { label: "New Enquiries", value: dash?.new_enquiries ?? enquiries.filter(e => e.status === "new").length, icon: "mail", color: P.warning },
+    { label: "Total Enquiries", value: dash?.total_enquiries ?? enquiries.length, icon: "people", color: "#3B82F6" },
+    { label: "Draft Quotes", value: dash?.draft_quotes ?? "—", icon: "document-text", color: P.copper },
+    { label: "Pending Reviews", value: dash?.pending_reviews ?? "—", icon: "star-half", color: P.success },
+    { label: "Live Reviews", value: dash?.approved_reviews ?? "—", icon: "star", color: "#8B5CF6" },
+    { label: "Gallery Photos", value: dash?.gallery_photos ?? "—", icon: "images", color: "#0EA5E9" },
   ];
 
   if (loading || fetching) {

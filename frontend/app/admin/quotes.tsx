@@ -16,9 +16,11 @@ const P = {
 };
 
 type LineItem = { description: string; qty: string; unit_price: string };
+type QuoteLineItem = { description: string; qty: number; unit_price: number; amount: number };
 type Quote = {
-  id: number; client_name: string; project_type: string;
-  status: string; total: number; created_at: string;
+  id: number; client_name: string; client_email?: string; project_type: string;
+  status: string; total: number; subtotal?: number; tax?: number; tax_percent?: number;
+  created_at: string; line_items?: QuoteLineItem[];
 };
 
 const QUOTE_STATUS: Record<string, { bg: string; color: string }> = {
@@ -92,8 +94,97 @@ export default function Quotes() {
   const loadQuoteIntoForm = (q: Quote) => {
     setSelectedId(q.id);
     setClientName(q.client_name);
-    setClientEmail((q as any).client_email || "");
+    setClientEmail(q.client_email || "");
     setProjectType(q.project_type || "");
+    if (q.line_items && q.line_items.length > 0) {
+      setLineItems(q.line_items.map(li => ({
+        description: li.description,
+        qty: String(li.qty),
+        unit_price: String(li.unit_price),
+      })));
+    } else {
+      setLineItems([emptyLine()]);
+    }
+    setTaxPercent(String(q.tax_percent ?? 20));
+  };
+
+  const printQuote = (q: Quote) => {
+    const rows = (q.line_items || []).map(li =>
+      `<tr>
+        <td style="padding:10px 12px;border-bottom:1px solid #eee">${li.description}</td>
+        <td style="padding:10px 12px;border-bottom:1px solid #eee;text-align:center">${li.qty}</td>
+        <td style="padding:10px 12px;border-bottom:1px solid #eee;text-align:right">£${li.unit_price.toFixed(2)}</td>
+        <td style="padding:10px 12px;border-bottom:1px solid #eee;text-align:right">£${li.amount.toFixed(2)}</td>
+      </tr>`
+    ).join("");
+    const taxRow = q.tax_percent
+      ? `<tr><td colspan="3" style="padding:10px 12px;color:#888;text-align:right">VAT (${q.tax_percent}%)</td><td style="padding:10px 12px;text-align:right;color:#888">£${(q.tax ?? 0).toFixed(2)}</td></tr>`
+      : "";
+    const html = `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"/>
+      <title>Quote — ${q.client_name}</title>
+      <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:Georgia,serif;color:#1A2A3A;padding:48px 56px;max-width:800px;margin:0 auto}
+        .header{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:24px;border-bottom:3px solid #B5651D;margin-bottom:32px}
+        .biz-name{font-size:26px;font-weight:700;color:#1A2A3A;letter-spacing:-0.5px}
+        .biz-contact{font-size:12px;color:#7A6A5A;margin-top:4px;line-height:1.6}
+        .quote-meta{text-align:right}
+        .quote-label{font-size:28px;font-weight:700;color:#B5651D;text-transform:uppercase;letter-spacing:2px}
+        .quote-date{font-size:12px;color:#7A6A5A;margin-top:4px}
+        .client-block{margin-bottom:32px}
+        .client-block h3{font-size:11px;font-weight:700;letter-spacing:1.5px;color:#7A6A5A;text-transform:uppercase;margin-bottom:6px}
+        .client-block p{font-size:15px;color:#1A2A3A;font-weight:600}
+        .client-block span{font-size:13px;color:#7A6A5A}
+        table{width:100%;border-collapse:collapse;margin-bottom:24px}
+        thead th{background:#1A2A3A;color:#fff;padding:10px 12px;text-align:left;font-size:12px;font-weight:700;letter-spacing:0.5px}
+        thead th:last-child,thead th:nth-child(3){text-align:right}
+        thead th:nth-child(2){text-align:center}
+        tfoot td{padding:10px 12px;font-weight:700}
+        .total-final{background:#B5651D;color:#fff;font-size:16px}
+        .footer{margin-top:48px;padding-top:16px;border-top:1px solid #eee;font-size:11px;color:#aaa;text-align:center;line-height:1.8}
+        @media print{body{padding:32px 40px}button{display:none}}
+      </style>
+    </head><body>
+      <div class="header">
+        <div>
+          <div class="biz-name">T&amp;B Paving</div>
+          <div class="biz-contact">01376 618683 &nbsp;|&nbsp; 07503 111803<br/>bbirdpaving@gmail.com<br/>Essex &amp; Suffolk</div>
+        </div>
+        <div class="quote-meta">
+          <div class="quote-label">Quotation</div>
+          <div class="quote-date">${new Date(q.created_at).toLocaleDateString("en-GB", { day:"numeric", month:"long", year:"numeric" })}</div>
+        </div>
+      </div>
+      <div class="client-block">
+        <h3>Prepared for</h3>
+        <p>${q.client_name}</p>
+        ${q.client_email ? `<span>${q.client_email}</span>` : ""}
+        <p style="margin-top:4px;font-size:13px;color:#7A6A5A">${q.project_type}</p>
+      </div>
+      <table>
+        <thead><tr>
+          <th>Description</th><th style="text-align:center">Qty</th>
+          <th style="text-align:right">Unit Price</th><th style="text-align:right">Amount</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+        <tfoot>
+          <tr><td colspan="3" style="text-align:right;color:#7A6A5A">Subtotal</td><td style="text-align:right">£${(q.subtotal ?? 0).toFixed(2)}</td></tr>
+          ${taxRow}
+          <tr class="total-final"><td colspan="3" style="text-align:right">Total</td><td style="text-align:right">£${q.total.toFixed(2)}</td></tr>
+        </tfoot>
+      </table>
+      <div class="footer">
+        T&amp;B Paving · Essex &amp; Suffolk · 10-year workmanship guarantee · Free site survey included<br/>
+        This quote is valid for 30 days from the date above.
+      </div>
+    </body></html>`;
+
+    const win = (globalThis as any).window?.open("", "_blank", "width=860,height=700");
+    if (!win) return;
+    win.document.write(html);
+    win.document.close();
+    win.focus();
+    setTimeout(() => win.print(), 400);
   };
 
   const saveQuote = async (status: "draft" | "sent") => {
@@ -195,9 +286,14 @@ export default function Quotes() {
             <View style={{ alignItems: "flex-end", gap: 6 }}>
               <Text style={styles.quoteTotal}>£{q.total?.toFixed(2) ?? "0.00"}</Text>
               <StatusBadge status={q.status} />
-              <TouchableOpacity onPress={() => deleteQuote(q.id)} activeOpacity={0.7}>
-                <Ionicons name="trash-outline" size={16} color={P.error} />
-              </TouchableOpacity>
+              <View style={{ flexDirection: "row", gap: 10 }}>
+                <TouchableOpacity onPress={() => printQuote(q)} activeOpacity={0.7}>
+                  <Ionicons name="print-outline" size={16} color={P.copper} />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => deleteQuote(q.id)} activeOpacity={0.7}>
+                  <Ionicons name="trash-outline" size={16} color={P.error} />
+                </TouchableOpacity>
+              </View>
             </View>
           </TouchableOpacity>
         ))
