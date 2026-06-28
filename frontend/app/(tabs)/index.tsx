@@ -14,6 +14,10 @@ import {
   GALLERY, TESTIMONIALS, AREAS, FAQS, REVIEW_PLATFORMS,
 } from "@/src/brand";
 import { useResponsive } from "@/src/hooks/use-responsive";
+import { useActiveSection } from "@/src/contexts/nav-context";
+
+// Ordered list used for scroll tracking (bottom-up so first match wins)
+const SECTION_ORDER = ["faq", "areas", "reviews", "gallery", "process", "services"];
 
 const SLIDES = [
   {
@@ -40,6 +44,19 @@ export default function Home() {
 
   const scrollRef = useRef<ScrollView>(null);
   const sectionY = useRef<Record<string, number>>({});
+  const { setActiveSection } = useActiveSection();
+
+  const handleScroll = useCallback((e: any) => {
+    const y = e.nativeEvent.contentOffset.y;
+    for (const key of SECTION_ORDER) {
+      const sY = sectionY.current[key];
+      if (sY !== undefined && y >= sY - 120) {
+        setActiveSection(key);
+        return;
+      }
+    }
+    setActiveSection("home");
+  }, [setActiveSection]);
 
   // Hero slider
   const [slideIdx, setSlideIdx] = React.useState(0);
@@ -91,6 +108,8 @@ export default function Home() {
       showsVerticalScrollIndicator={false}
       contentContainerStyle={{ paddingBottom: S["3xl"] }}
       style={{ flex: 1, backgroundColor: C.bg }}
+      onScroll={handleScroll}
+      scrollEventThrottle={16}
     >
       {/* ── HERO SLIDER ── */}
       <View style={[styles.hero, { height: heroH }]}>

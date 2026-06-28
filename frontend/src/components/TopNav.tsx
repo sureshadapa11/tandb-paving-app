@@ -1,52 +1,50 @@
 import React, { useState } from "react";
-import {
-  View, Text, StyleSheet, Pressable, Platform,
-} from "react-native";
-import { useRouter, usePathname } from "expo-router";
+import { View, Text, StyleSheet, Pressable, Platform } from "react-native";
+import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { C, S, R } from "@/src/theme";
 import { useResponsive } from "@/src/hooks/use-responsive";
+import { useActiveSection } from "@/src/contexts/nav-context";
 
 export const NAV_HEIGHT = 64;
 
+// All links scroll to sections on the home page
 const LINKS = [
-  { label: "Services",   route: "/(tabs)/services", scrollTo: null },
-  { label: "Process",    route: "/(tabs)",           scrollTo: "process" },
-  { label: "Gallery",    route: "/(tabs)/gallery",   scrollTo: null },
-  { label: "Reviews",    route: "/(tabs)/reviews",   scrollTo: null },
-  { label: "Areas",      route: "/(tabs)",           scrollTo: "areas" },
-  { label: "FAQ",        route: "/(tabs)",           scrollTo: "faq" },
+  { label: "Home",     section: "home" },
+  { label: "Services", section: "services" },
+  { label: "Process",  section: "process" },
+  { label: "Gallery",  section: "gallery" },
+  { label: "Reviews",  section: "reviews" },
+  { label: "Areas",    section: "areas" },
+  { label: "FAQ",      section: "faq" },
 ];
 
 export default function TopNav() {
   const router = useRouter();
-  const pathname = usePathname();
   const { isDesktop, hPad } = useResponsive();
   const [menuOpen, setMenuOpen] = useState(false);
+  const { activeSection } = useActiveSection();
 
-  const navigate = (route: string, scrollTo: string | null) => {
+  const navigate = (section: string) => {
     setMenuOpen(false);
-    if (scrollTo) {
-      router.push(`${route}?scrollTo=${scrollTo}` as any);
+    if (section === "home") {
+      router.push("/(tabs)" as any);
     } else {
-      router.push(route as any);
+      router.push(`/(tabs)?scrollTo=${section}` as any);
     }
   };
 
-  const goQuote = () => { setMenuOpen(false); router.push("/(tabs)/quote" as any); };
-
-  const isActive = (route: string) => {
-    if (route === "/(tabs)" && (pathname === "/" || pathname === "/index")) return true;
-    if (route !== "/(tabs)" && pathname.includes(route.replace("/(tabs)/", ""))) return true;
-    return false;
+  const goQuote = () => {
+    setMenuOpen(false);
+    router.push("/(tabs)/quote" as any);
   };
 
   return (
     <View style={styles.outer}>
       <View style={[styles.inner, { paddingHorizontal: hPad }]}>
         {/* Logo */}
-        <Pressable onPress={() => router.push("/(tabs)" as any)} style={styles.logo}>
+        <Pressable onPress={() => navigate("home")} style={styles.logo}>
           <View style={styles.logoCircle}>
             <Text style={styles.logoMark}>T&B</Text>
           </View>
@@ -57,15 +55,18 @@ export default function TopNav() {
         </Pressable>
 
         {isDesktop ? (
-          /* Desktop nav */
           <View style={styles.desktopLinks}>
-            {LINKS.map((l) => (
-              <Pressable key={l.label} onPress={() => navigate(l.route, l.scrollTo)} style={styles.link}>
-                <Text style={[styles.linkText, isActive(l.route) && !l.scrollTo && styles.linkActive]}>
-                  {l.label}
-                </Text>
-              </Pressable>
-            ))}
+            {LINKS.map((l) => {
+              const isActive = activeSection === l.section;
+              return (
+                <Pressable key={l.label} onPress={() => navigate(l.section)} style={styles.link}>
+                  <Text style={[styles.linkText, isActive && styles.linkActive]}>
+                    {l.label}
+                  </Text>
+                  {isActive && <View style={styles.linkUnderline} />}
+                </Pressable>
+              );
+            })}
             <Pressable onPress={goQuote}>
               <LinearGradient
                 colors={[C.brand, C.brandDark]}
@@ -78,21 +79,26 @@ export default function TopNav() {
             </Pressable>
           </View>
         ) : (
-          /* Mobile hamburger */
           <Pressable onPress={() => setMenuOpen(!menuOpen)} style={styles.hamburger}>
             <Ionicons name={menuOpen ? "close" : "menu"} size={26} color={C.ink} />
           </Pressable>
         )}
       </View>
 
-      {/* Mobile dropdown menu */}
+      {/* Mobile dropdown */}
       {!isDesktop && menuOpen && (
         <View style={styles.mobileMenu}>
-          {LINKS.map((l) => (
-            <Pressable key={l.label} onPress={() => navigate(l.route, l.scrollTo)} style={styles.mobileLink}>
-              <Text style={styles.mobileLinkText}>{l.label}</Text>
-            </Pressable>
-          ))}
+          {LINKS.map((l) => {
+            const isActive = activeSection === l.section;
+            return (
+              <Pressable key={l.label} onPress={() => navigate(l.section)} style={styles.mobileLink}>
+                <Text style={[styles.mobileLinkText, isActive && { color: C.brand }]}>
+                  {l.label}
+                </Text>
+                {isActive && <Ionicons name="chevron-forward" size={16} color={C.brand} />}
+              </Pressable>
+            );
+          })}
           <View style={styles.mobileMenuDivider} />
           <Pressable onPress={goQuote} style={styles.mobileCTA}>
             <LinearGradient colors={[C.brand, C.brandDark]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.mobileCTAGrad}>
@@ -132,10 +138,14 @@ const styles = StyleSheet.create({
   logoText: { gap: 1 },
   logoName: { fontSize: 13, fontWeight: "900", color: C.ink, letterSpacing: 0.5 },
   logoSub: { fontSize: 9, fontWeight: "600", color: C.muted, letterSpacing: 0.5 },
-  desktopLinks: { flexDirection: "row", alignItems: "center", gap: 4 },
-  link: { paddingHorizontal: S.md, paddingVertical: S.sm },
-  linkText: { fontSize: 13.5, fontWeight: "700", color: C.inkSoft },
+  desktopLinks: { flexDirection: "row", alignItems: "center", gap: 2 },
+  link: { paddingHorizontal: S.sm, paddingVertical: S.sm, alignItems: "center" },
+  linkText: { fontSize: 13, fontWeight: "700", color: C.inkSoft },
   linkActive: { color: C.brand },
+  linkUnderline: {
+    position: "absolute", bottom: 0, left: S.sm, right: S.sm,
+    height: 2, backgroundColor: C.brand, borderRadius: 1,
+  },
   quotePill: {
     marginLeft: S.sm,
     paddingHorizontal: S.lg,
@@ -143,10 +153,7 @@ const styles = StyleSheet.create({
     borderRadius: R.pill,
   },
   quotePillText: { color: "#fff", fontWeight: "800", fontSize: 13 },
-  hamburger: {
-    width: 44, height: 44,
-    alignItems: "center", justifyContent: "center",
-  },
+  hamburger: { width: 44, height: 44, alignItems: "center", justifyContent: "center" },
   mobileMenu: {
     backgroundColor: C.surface,
     borderTopWidth: 1,
@@ -154,7 +161,14 @@ const styles = StyleSheet.create({
     paddingVertical: S.sm,
     paddingHorizontal: S.lg,
   },
-  mobileLink: { paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: C.border },
+  mobileLink: {
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: C.border,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
   mobileLinkText: { fontSize: 15, fontWeight: "700", color: C.ink },
   mobileMenuDivider: { height: S.sm },
   mobileCTA: { paddingVertical: S.sm },
