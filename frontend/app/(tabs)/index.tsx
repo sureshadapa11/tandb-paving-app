@@ -62,11 +62,23 @@ export default function Home() {
   const { setActiveSection } = useActiveSection();
 
   const [settings, setSettings] = useState<any>(null);
+  const [liveTestimonials, setLiveTestimonials] = useState<any[]>([]);
+  const [uploadedPhotos, setUploadedPhotos] = useState<any[]>([]);
+
   useEffect(() => {
-    fetch(`${BACKEND}/api/site-settings`)
-      .then((r) => r.ok ? r.json() : null)
-      .then((d) => { if (d) setSettings(d); })
-      .catch(() => {});
+    Promise.all([
+      fetch(`${BACKEND}/api/site-settings`).then(r => r.ok ? r.json() : null).catch(() => null),
+      fetch(`${BACKEND}/api/public/testimonials`).then(r => r.ok ? r.json() : []).catch(() => []),
+      fetch(`${BACKEND}/api/public/gallery`).then(r => r.ok ? r.json() : []).catch(() => []),
+    ]).then(([s, t, g]) => {
+      if (s) setSettings(s);
+      if (t?.length) setLiveTestimonials(t.slice(0, 3));
+      if (g?.length) setUploadedPhotos(g.map((d: any) => ({
+        img: { uri: `data:image/jpeg;base64,${d.image_base64 || d.image}` },
+        label: d.caption || "Project Photo",
+        town: d.town || "",
+      })));
+    });
   }, []);
 
   const biz = settings ? {
@@ -98,6 +110,10 @@ export default function Home() {
     title: settings?.steps?.[i]?.title || s.title,
     desc: settings?.steps?.[i]?.desc || s.desc,
   }));
+
+  const displayTestimonials = liveTestimonials.length > 0 ? liveTestimonials : TESTIMONIALS;
+
+  const homeGallery = [...uploadedPhotos, ...GALLERY].slice(0, 6);
 
   const slides = SLIDES.map((s, i) => {
     const customImg = settings?.hero_images?.[i];
@@ -373,7 +389,7 @@ export default function Home() {
           <Eyebrow>Our Work</Eyebrow>
           <SectionTitle>Recent Projects</SectionTitle>
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: S.md, marginTop: S.lg }}>
-            {GALLERY.map((g, i) => (
+            {homeGallery.map((g, i) => (
               <Tilt3D
                 key={i}
                 testID={`home-gallery-${i}`}
@@ -393,7 +409,7 @@ export default function Home() {
                 />
                 <View style={{ padding: S.sm }}>
                   <Text style={styles.galleryLabel} numberOfLines={1}>{g.label}</Text>
-                  <Text style={styles.galleryTown}>{g.town}</Text>
+                  {g.town ? <Text style={styles.galleryTown}>{g.town}</Text> : null}
                 </View>
               </Tilt3D>
             ))}
@@ -431,8 +447,8 @@ export default function Home() {
             { marginTop: S.xl },
             (isDesktop || isTablet) ? { flexDirection: "row", gap: S.lg } : { gap: S.md },
           ]}>
-            {TESTIMONIALS.map((t, i) => (
-              <View key={i} style={[styles.quoteCard, (isDesktop || isTablet) && { flex: 1 }]}>
+            {displayTestimonials.map((t, i) => (
+              <View key={(t as any).id || i} style={[styles.quoteCard, (isDesktop || isTablet) && { flex: 1 }]}>
                 <Stars n={t.stars} size={16} />
                 <Text style={styles.quoteText}>"{t.text}"</Text>
                 <View style={styles.quoteMeta}>
@@ -440,7 +456,7 @@ export default function Home() {
                     <Text style={styles.quoteAvatarText}>{t.name[0]}</Text>
                   </View>
                   <View>
-                    <Text style={styles.quoteName}>{t.name} · {t.town}</Text>
+                    <Text style={styles.quoteName}>{t.name}{t.town ? ` · ${t.town}` : ""}</Text>
                     <Text style={styles.quoteJob}>{t.job}</Text>
                   </View>
                 </View>
