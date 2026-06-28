@@ -177,7 +177,7 @@ export default function Quotes() {
   );
 
   const Builder = (
-    <ScrollView style={[styles.panel, isDesktop && styles.panelRight]} contentContainerStyle={styles.builderContent}>
+    <ScrollView style={[styles.panel, styles.panelRight]} contentContainerStyle={styles.builderContent}>
       <Text style={styles.panelTitle}>{selectedId ? "Edit Quote" : "New Quote"}</Text>
 
       <Text style={styles.fieldLabel}>Client Name</Text>
@@ -320,10 +320,10 @@ const styles = StyleSheet.create({
   topRight: { flexDirection: "row", alignItems: "center", gap: 12 },
   userName: { fontSize: 14, color: P.muted, fontWeight: "500" },
   iconBtn: { padding: 8 },
-  content: { flex: 1, flexDirection: "column" },
+  content: { flex: 1, flexDirection: "column", overflow: "hidden" as any },
   contentDesktop: { flexDirection: "row" },
-  panel: { flex: 1, padding: 20, backgroundColor: "#F7F4F0" },
-  panelLeft: { maxWidth: 360, borderRightWidth: 1, borderRightColor: P.border, backgroundColor: "#FAFAF8" },
+  panel: { padding: 20, backgroundColor: "#F7F4F0" },
+  panelLeft: { maxWidth: 360, borderRightWidth: 1, borderRightColor: P.border, backgroundColor: "#FAFAF8", flex: 1 },
   panelRight: { flex: 1 },
   panelTitle: { fontSize: 16, fontWeight: "700", color: P.ink, marginBottom: 14 },
   quoteRow: {
