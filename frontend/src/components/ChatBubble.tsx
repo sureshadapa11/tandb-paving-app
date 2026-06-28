@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import {
   View, Text, StyleSheet, TouchableOpacity, TextInput,
-  ScrollView, Animated, Platform, ActivityIndicator,
+  ScrollView, Animated, Platform, ActivityIndicator, StyleSheet as RNStyleSheet,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { C, S, R, SHADOW } from "@/src/theme";
@@ -36,19 +36,6 @@ export default function ChatBubble() {
     }).start();
   }, [open]);
 
-  // Close on click outside — inject a real DOM overlay behind the panel (web only)
-  useEffect(() => {
-    if (!open || Platform.OS !== "web") return;
-    const doc = (globalThis as any).document;
-    if (!doc) return;
-    const overlay = doc.createElement("div");
-    overlay.style.cssText =
-      "position:fixed;top:0;left:0;width:100%;height:100%;z-index:998;background:transparent;";
-    overlay.addEventListener("click", () => setOpen(false));
-    doc.body.appendChild(overlay);
-    return () => { doc.body.removeChild(overlay); };
-  }, [open]);
-
   useEffect(() => {
     if (open && messages.length === 0 && !started) {
       setStarted(true);
@@ -67,7 +54,6 @@ export default function ChatBubble() {
     const msg = (text ?? input).trim();
     if (!msg || loading) return;
     setInput("");
-    // snapshot history BEFORE adding the new message to avoid sending it twice
     const history = messages.slice(-6).map(m => ({ role: m.role, content: m.content }));
     setMessages(prev => [...prev, { role: "user", content: msg }]);
     setLoading(true);
@@ -83,7 +69,7 @@ export default function ChatBubble() {
       }
       const data = await res.json();
       setMessages(prev => [...prev, { role: "assistant", content: data.reply || "Sorry, I couldn't get a response. Please call us on 01376 618683." }]);
-    } catch (e: any) {
+    } catch {
       setMessages(prev => [...prev, { role: "assistant", content: "Sorry, something went wrong. Please call us on 01376 618683." }]);
     }
     setLoading(false);
@@ -98,103 +84,118 @@ export default function ChatBubble() {
   const hasSuggestions = messages.length <= 1;
 
   return (
-    <View style={styles.container} pointerEvents="box-none">
-      {/* Chat panel */}
+    // When open: expand to full screen so the backdrop Pressable can catch outside clicks
+    <View
+      style={open ? styles.containerOpen : styles.containerClosed}
+      pointerEvents={open ? "auto" : "box-none"}
+    >
+      {/* Backdrop — fills the whole container, closes chat when pressed */}
       {open && (
-        <Animated.View
-          style={[
-            styles.panel,
-            { transform: [{ translateY: panelTranslate }], opacity: panelOpacity },
-          ]}
-        >
-          {/* Panel header */}
-          <View style={styles.panelHeader}>
-            <View style={styles.panelHeaderLeft}>
-              <View style={styles.avatar}>
-                <Ionicons name="sparkles" size={14} color="#fff" />
-              </View>
-              <View>
-                <Text style={styles.panelTitle}>T&B Paving Assistant</Text>
-                <View style={styles.onlineRow}>
-                  <View style={styles.onlineDot} />
-                  <Text style={styles.onlineText}>AI-powered · instant replies</Text>
-                </View>
-              </View>
-            </View>
-            <TouchableOpacity onPress={() => setOpen(false)} style={styles.closeBtn}>
-              <Ionicons name="close" size={20} color={C.muted} />
-            </TouchableOpacity>
-          </View>
-
-          {/* Messages */}
-          <ScrollView
-            ref={scrollRef}
-            style={styles.messages}
-            contentContainerStyle={{ padding: S.md, gap: S.sm }}
-            showsVerticalScrollIndicator={false}
-          >
-            {messages.map((m, i) => (
-              <View key={i} style={[styles.bubble, m.role === "user" ? styles.userBubble : styles.aiBubble]}>
-                <Text style={[styles.bubbleText, m.role === "user" ? styles.userText : styles.aiText]}>
-                  {m.content}
-                </Text>
-              </View>
-            ))}
-            {loading && (
-              <View style={[styles.bubble, styles.aiBubble, styles.typingBubble]}>
-                <ActivityIndicator size="small" color={C.brand} />
-              </View>
-            )}
-
-            {/* Quick suggestions */}
-            {hasSuggestions && !loading && (
-              <View style={styles.suggestions}>
-                {SUGGESTIONS.map((s) => (
-                  <TouchableOpacity key={s} style={styles.suggestion} onPress={() => send(s)} activeOpacity={0.75}>
-                    <Text style={styles.suggestionText}>{s}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            )}
-          </ScrollView>
-
-          {/* Input */}
-          <View style={styles.inputRow}>
-            <TextInput
-              style={styles.input}
-              value={input}
-              onChangeText={setInput}
-              placeholder="Ask anything…"
-              placeholderTextColor={C.muted}
-              onSubmitEditing={() => send()}
-              returnKeyType="send"
-              blurOnSubmit={false}
-            />
-            <TouchableOpacity
-              style={[styles.sendBtn, (!input.trim() || loading) && styles.sendBtnDisabled]}
-              onPress={() => send()}
-              disabled={!input.trim() || loading}
-              activeOpacity={0.8}
-            >
-              <Ionicons name="send" size={16} color="#fff" />
-            </TouchableOpacity>
-          </View>
-        </Animated.View>
+        <TouchableOpacity
+          style={RNStyleSheet.absoluteFill}
+          onPress={() => setOpen(false)}
+          activeOpacity={1}
+        />
       )}
 
-      {/* Floating button */}
-      <TouchableOpacity
-        style={[styles.fab, open && styles.fabOpen]}
-        onPress={() => setOpen(o => !o)}
-        activeOpacity={0.85}
-      >
-        <Ionicons name={open ? "close" : "chatbubble-ellipses"} size={24} color="#fff" />
-        {!open && (
-          <View style={styles.fabBadge}>
-            <Ionicons name="sparkles" size={9} color={C.brand} />
-          </View>
+      {/* Chat content anchored to bottom-right — renders above backdrop */}
+      <View style={styles.chatAnchor} pointerEvents="box-none">
+
+        {/* Chat panel */}
+        {open && (
+          <Animated.View
+            style={[
+              styles.panel,
+              { transform: [{ translateY: panelTranslate }], opacity: panelOpacity },
+            ]}
+          >
+            {/* Panel header */}
+            <View style={styles.panelHeader}>
+              <View style={styles.panelHeaderLeft}>
+                <View style={styles.avatar}>
+                  <Ionicons name="sparkles" size={14} color="#fff" />
+                </View>
+                <View>
+                  <Text style={styles.panelTitle}>T&B Paving Assistant</Text>
+                  <View style={styles.onlineRow}>
+                    <View style={styles.onlineDot} />
+                    <Text style={styles.onlineText}>AI-powered · instant replies</Text>
+                  </View>
+                </View>
+              </View>
+              <TouchableOpacity onPress={() => setOpen(false)} style={styles.closeBtn}>
+                <Ionicons name="close" size={20} color={C.muted} />
+              </TouchableOpacity>
+            </View>
+
+            {/* Messages */}
+            <ScrollView
+              ref={scrollRef}
+              style={styles.messages}
+              contentContainerStyle={{ padding: S.md, gap: S.sm }}
+              showsVerticalScrollIndicator={false}
+            >
+              {messages.map((m, i) => (
+                <View key={i} style={[styles.bubble, m.role === "user" ? styles.userBubble : styles.aiBubble]}>
+                  <Text style={[styles.bubbleText, m.role === "user" ? styles.userText : styles.aiText]}>
+                    {m.content}
+                  </Text>
+                </View>
+              ))}
+              {loading && (
+                <View style={[styles.bubble, styles.aiBubble, styles.typingBubble]}>
+                  <ActivityIndicator size="small" color={C.brand} />
+                </View>
+              )}
+              {hasSuggestions && !loading && (
+                <View style={styles.suggestions}>
+                  {SUGGESTIONS.map((s) => (
+                    <TouchableOpacity key={s} style={styles.suggestion} onPress={() => send(s)} activeOpacity={0.75}>
+                      <Text style={styles.suggestionText}>{s}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+            </ScrollView>
+
+            {/* Input */}
+            <View style={styles.inputRow}>
+              <TextInput
+                style={styles.input}
+                value={input}
+                onChangeText={setInput}
+                placeholder="Ask anything…"
+                placeholderTextColor={C.muted}
+                onSubmitEditing={() => send()}
+                returnKeyType="send"
+                blurOnSubmit={false}
+              />
+              <TouchableOpacity
+                style={[styles.sendBtn, (!input.trim() || loading) && styles.sendBtnDisabled]}
+                onPress={() => send()}
+                disabled={!input.trim() || loading}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="send" size={16} color="#fff" />
+              </TouchableOpacity>
+            </View>
+          </Animated.View>
         )}
-      </TouchableOpacity>
+
+        {/* Floating button */}
+        <TouchableOpacity
+          style={[styles.fab, open && styles.fabOpen]}
+          onPress={() => setOpen(o => !o)}
+          activeOpacity={0.85}
+        >
+          <Ionicons name={open ? "close" : "chatbubble-ellipses"} size={24} color="#fff" />
+          {!open && (
+            <View style={styles.fabBadge}>
+              <Ionicons name="sparkles" size={9} color={C.brand} />
+            </View>
+          )}
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
@@ -202,12 +203,29 @@ export default function ChatBubble() {
 const PANEL_W = 340;
 
 const styles = StyleSheet.create({
-  container: {
+  // Closed: tiny anchor at bottom-right, passes through all touches
+  containerClosed: {
     position: "absolute",
     bottom: 24,
     right: 20,
     alignItems: "flex-end",
     zIndex: 999,
+  },
+  // Open: full screen so backdrop Pressable can receive outside clicks
+  containerOpen: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 999,
+  },
+  // Panel + FAB always anchored bottom-right
+  chatAnchor: {
+    position: "absolute",
+    bottom: 24,
+    right: 20,
+    alignItems: "flex-end",
   },
   panel: {
     width: PANEL_W,

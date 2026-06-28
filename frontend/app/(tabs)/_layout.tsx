@@ -12,7 +12,6 @@ export default function TabsLayout() {
     <NavProvider>
       <View style={{ flex: 1 }}>
         <TopNav />
-        <ChatBubble />
         <Tabs
           screenOptions={{
             headerShown: false,
@@ -25,6 +24,7 @@ export default function TabsLayout() {
           <Tabs.Screen name="reviews"  options={{ title: "Reviews",  tabBarIcon: ({ color, size }) => <Ionicons name="star"       size={size} color={color} /> }} />
           <Tabs.Screen name="quote"    options={{ title: "Get Quote",tabBarIcon: ({ color, size }) => <Ionicons name="calculator" size={size} color={color} /> }} />
         </Tabs>
+        <ChatBubble />
       </View>
     </NavProvider>
   );
