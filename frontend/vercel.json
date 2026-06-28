@@ -1,5 +1,5 @@
 {
-  "buildCommand": "npx expo export --platform web",
+  "buildCommand": "npx expo export --platform web && cp public/sitemap.xml dist/sitemap.xml && cp public/robots.txt dist/robots.txt",
   "outputDirectory": "dist",
   "installCommand": "yarn install --ignore-scripts",
   "framework": null,

@@ -37,6 +37,29 @@ app = FastAPI()
 api_router = APIRouter(prefix="/api")
 security = HTTPBearer(auto_error=False)
 
+# ---------- Rate limiting ----------
+from collections import defaultdict
+import time as _time
+
+_rate_store: dict[str, list[float]] = defaultdict(list)
+
+def rate_limit(max_calls: int, window_seconds: int = 3600):
+    """Simple sliding-window rate limiter — per client IP, in-memory."""
+    from fastapi import Request
+    async def dependency(request: Request):
+        ip = request.client.host if request.client else "unknown"
+        key = f"{request.url.path}:{ip}"
+        now = _time.monotonic()
+        cutoff = now - window_seconds
+        _rate_store[key] = [t for t in _rate_store[key] if t > cutoff]
+        if len(_rate_store[key]) >= max_calls:
+            raise HTTPException(
+                status_code=429,
+                detail=f"Too many requests — please wait before trying again.",
+            )
+        _rate_store[key].append(now)
+    return dependency
+
 
 # ---------- Helpers ----------
 def now_iso() -> str:
@@ -485,7 +508,7 @@ async def public_gallery():
     return [clean(d) for d in docs]
 
 
-@api_router.post("/reviews/submit")
+@api_router.post("/reviews/submit", dependencies=[Depends(rate_limit(5, 3600))])
 async def submit_review(body: ReviewSubmitBody, background: BackgroundTasks):
     """Public endpoint — no auth. Saves as pending for admin approval."""
     doc = body.dict()
@@ -719,7 +742,7 @@ def send_quote_email(quote: dict):
         logger.error(f"Quote email failed: {e}")
 
 
-@api_router.post("/enquiries")
+@api_router.post("/enquiries", dependencies=[Depends(rate_limit(10, 3600))])
 async def create_enquiry(body: EnquiryBody, background: BackgroundTasks):
     doc = body.dict()
     doc.update({"id": oid(), "status": "new", "created_at": now_iso()})
@@ -740,7 +763,7 @@ async def update_enquiry(eid: str, status: str, user=Depends(get_current_user)):
     return {"ok": True}
 
 
-@api_router.post("/ai/paving-estimate")
+@api_router.post("/ai/paving-estimate", dependencies=[Depends(rate_limit(10, 3600))])
 async def paving_estimate(body: PavingEstimateBody):
     prompt = (
         "You are an expert UK paving and driveway estimator for T&B Paving (Manchester & North West). "

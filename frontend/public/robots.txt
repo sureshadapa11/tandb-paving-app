@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://frontend-khaki-tau-70.vercel.app/sitemap.xml
