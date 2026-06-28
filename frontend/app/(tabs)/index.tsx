@@ -22,9 +22,14 @@ const SLIDES = [
     sub: "From first call to finished driveway — straightforward, transparent and stress-free.",
   },
   {
-    img: require("../../assets/images/patio-garden.jpg"),
-    headline: "Beautiful Patios &\nGarden Spaces",
+    img: require("../../assets/images/grey-porcelain-patio.jpg"),
+    headline: "Stunning Patios &\nGarden Spaces",
     sub: "Natural stone, porcelain & Indian sandstone patios. Crafted to impress.",
+  },
+  {
+    img: require("../../assets/images/large-resin-driveway.jpg"),
+    headline: "Resin Bound Driveways\nBuilt to Last",
+    sub: "Seamless, permeable resin surfaces in modern finishes. Free site survey available.",
   },
 ];
 

@@ -29,15 +29,15 @@ export const TRUST = [
 ];
 
 export const SERVICES = [
-  { id: "block-paving", icon: "grid",               title: "Block Paving",               desc: "Durable, stylish driveways in countless colours and patterns.",           bgImg: require("../assets/images/block-paving.jpg") },
-  { id: "patios",       icon: "square",              title: "Patios & Paving",            desc: "Natural stone, porcelain & concrete patios built to impress.",            bgImg: require("../assets/images/sandstone-patio.jpg") },
-  { id: "cleaning",     icon: "water",               title: "Driveway Cleaning & Sealing",desc: "Restore and protect your existing driveway for years to come.",           bgImg: require("../assets/images/sandstone-cleaning.jpg") },
+  { id: "block-paving", icon: "grid",               title: "Block Paving",               desc: "Durable, stylish driveways in countless colours and patterns.",           bgImg: require("../assets/images/block-paving-lawn.jpg") },
+  { id: "patios",       icon: "square",              title: "Patios & Paving",            desc: "Natural stone, porcelain & concrete patios built to impress.",            bgImg: require("../assets/images/grey-porcelain-patio.jpg") },
+  { id: "cleaning",     icon: "water",               title: "Driveway Cleaning & Sealing",desc: "Restore and protect your existing driveway for years to come.",           bgImg: require("../assets/images/sandstone-patio.jpg") },
   { id: "concrete",     icon: "cube",                title: "Concrete Driveways",         desc: "Hard-wearing, low-maintenance concrete surfaces.",                        bgImg: require("../assets/images/hero-excavator.webp") },
-  { id: "tarmac",       icon: "car-sport",           title: "Tarmac Driveways",           desc: "Smooth, cost-effective tarmac for drives of any size.",                  bgImg: require("../assets/images/patio-garden.jpg") },
+  { id: "tarmac",       icon: "car-sport",           title: "Tarmac Driveways",           desc: "Smooth, cost-effective tarmac for drives of any size.",                  bgImg: require("../assets/images/block-paving-garden.jpg") },
   { id: "gravel",       icon: "ellipsis-horizontal", title: "Gravel & Shingle",           desc: "Decorative, well-drained gravel finishes.",                              bgImg: require("../assets/images/gravel-driveway.jpg") },
-  { id: "resin",        icon: "color-fill",          title: "Resin Bound Surfacing",      desc: "Seamless, permeable resin in modern finishes.",                          bgImg: require("../assets/images/resin-driveway.jpg") },
-  { id: "permeable",    icon: "rainy",               title: "Permeable Paving",           desc: "SuDS-compliant, drainage-friendly paving.",                              bgImg: require("../assets/images/block-paving.jpg") },
-  { id: "bonded",       icon: "apps",                title: "Bonded Aggregate",           desc: "Textured, slip-resistant decorative surfacing.",                         bgImg: require("../assets/images/resin-driveway.jpg") },
+  { id: "resin",        icon: "color-fill",          title: "Resin Bound Surfacing",      desc: "Seamless, permeable resin in modern finishes.",                          bgImg: require("../assets/images/large-resin-driveway.jpg") },
+  { id: "permeable",    icon: "rainy",               title: "Permeable Paving",           desc: "SuDS-compliant, drainage-friendly paving.",                              bgImg: require("../assets/images/poolside-paving.jpg") },
+  { id: "bonded",       icon: "apps",                title: "Bonded Aggregate",           desc: "Textured, slip-resistant decorative surfacing.",                         bgImg: require("../assets/images/resin-installation.jpg") },
   { id: "soakaways",    icon: "git-network",         title: "Soakaways & Drainage",       desc: "Proper drainage solutions that genuinely last.",                         bgImg: require("../assets/images/hero-excavator.webp") },
   { id: "paths",        icon: "walk",                title: "Garden Paths",               desc: "Beautiful, safe paths around your home and garden.",                     bgImg: require("../assets/images/garden-steps-1.jpg") },
 ];
@@ -49,13 +49,27 @@ export const STEPS = [
   { n: "04", icon: "shield-checkmark", title: "10-Year Guarantee", desc: "Relax — your new surface is built to last and fully guaranteed." },
 ];
 
-// Real T&B Paving project photos (high-resolution only)
+// Real T&B Paving project photos
 export const HERO_IMG = require("../assets/images/hero-excavator.webp");
-export const ABOUT_IMG = require("../assets/images/patio-garden.jpg");
+export const ABOUT_IMG = require("../assets/images/grey-porcelain-patio.jpg");
 
 export const GALLERY: { img: any; label: string; town: string }[] = [
-  { img: require("../assets/images/hero-excavator.webp"), label: "Professional Groundworks",   town: "North West" },
-  { img: require("../assets/images/patio-garden.jpg"),    label: "Patio & Garden Design",      town: "Salford" },
+  { img: require("../assets/images/grey-porcelain-patio.jpg"),   label: "Grey Porcelain Patio",          town: "Essex" },
+  { img: require("../assets/images/grey-porcelain-patio-2.jpg"), label: "Porcelain Patio & Garden",      town: "Essex" },
+  { img: require("../assets/images/large-resin-driveway.jpg"),   label: "Large Resin Bound Driveway",    town: "Suffolk" },
+  { img: require("../assets/images/resin-installation.jpg"),     label: "Resin Driveway Installation",   town: "Suffolk" },
+  { img: require("../assets/images/poolside-paving.jpg"),        label: "Poolside Porcelain Paving",     town: "North West" },
+  { img: require("../assets/images/sandstone-patio.jpg"),        label: "Indian Sandstone Patio",        town: "Stockport" },
+  { img: require("../assets/images/patio-garden.jpg"),           label: "Patio & Garden Design",         town: "Salford" },
+  { img: require("../assets/images/compass-feature.jpg"),        label: "Bespoke Compass Feature",       town: "North West" },
+  { img: require("../assets/images/block-paving-lawn.jpg"),      label: "Block Paving & Turf Laying",    town: "Manchester" },
+  { img: require("../assets/images/block-paving-garden.jpg"),    label: "Block Paving & Garden Path",    town: "Bolton" },
+  { img: require("../assets/images/gravel-driveway.jpg"),        label: "Gravel Driveway",               town: "Chorley" },
+  { img: require("../assets/images/circular-patio.jpg"),         label: "Circular Feature Patio",        town: "Cheshire" },
+  { img: require("../assets/images/garden-steps-1.jpg"),         label: "Garden Steps & Lawn",           town: "Altrincham" },
+  { img: require("../assets/images/garden-steps-2.jpg"),         label: "Garden Paths & Steps",          town: "Sale" },
+  { img: require("../assets/images/sandstone-steps.jpg"),        label: "Sandstone Patio & Steps",       town: "Bury" },
+  { img: require("../assets/images/hero-excavator.webp"),        label: "Professional Groundworks",      town: "North West" },
 ];
 
 export const TESTIMONIALS = [
