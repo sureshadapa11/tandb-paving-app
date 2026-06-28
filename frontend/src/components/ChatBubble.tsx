@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import {
   View, Text, StyleSheet, TouchableOpacity, TextInput,
-  ScrollView, Animated, Platform, ActivityIndicator, StyleSheet as RNStyleSheet,
+  ScrollView, Animated, Platform, ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { C, S, R, SHADOW } from "@/src/theme";
@@ -16,6 +16,13 @@ const SUGGESTIONS = [
   "How long does resin take?",
   "Do you offer a guarantee?",
 ];
+
+const PANEL_W = 340;
+const PANEL_H = 460;
+const FAB_SIZE = 52;
+const BOTTOM = 24;
+const RIGHT = 20;
+const GAP = 12;
 
 export default function ChatBubble() {
   const [open, setOpen] = useState(false);
@@ -83,156 +90,142 @@ export default function ChatBubble() {
 
   const hasSuggestions = messages.length <= 1;
 
+  // When closed: tiny anchor at bottom-right, box-none so page works normally.
+  // When open: full-screen container so backdrop (first child) can catch outside clicks.
+  // Backdrop, panel, and FAB are flat siblings — later siblings render on top.
+  // Clicking outside panel/FAB hits the backdrop → closes chat.
   return (
-    // When open: expand to full screen so the backdrop Pressable can catch outside clicks
     <View
       style={open ? styles.containerOpen : styles.containerClosed}
       pointerEvents={open ? "auto" : "box-none"}
     >
-      {/* Backdrop — fills the whole container, closes chat when pressed */}
+      {/* ① Backdrop — lowest layer, closes chat when pressed */}
       {open && (
         <TouchableOpacity
-          style={RNStyleSheet.absoluteFill}
+          style={StyleSheet.absoluteFill}
           onPress={() => setOpen(false)}
           activeOpacity={1}
         />
       )}
 
-      {/* Chat content anchored to bottom-right — renders above backdrop */}
-      <View style={styles.chatAnchor} pointerEvents="box-none">
-
-        {/* Chat panel */}
-        {open && (
-          <Animated.View
-            style={[
-              styles.panel,
-              { transform: [{ translateY: panelTranslate }], opacity: panelOpacity },
-            ]}
-          >
-            {/* Panel header */}
-            <View style={styles.panelHeader}>
-              <View style={styles.panelHeaderLeft}>
-                <View style={styles.avatar}>
-                  <Ionicons name="sparkles" size={14} color="#fff" />
-                </View>
-                <View>
-                  <Text style={styles.panelTitle}>T&B Paving Assistant</Text>
-                  <View style={styles.onlineRow}>
-                    <View style={styles.onlineDot} />
-                    <Text style={styles.onlineText}>AI-powered · instant replies</Text>
-                  </View>
+      {/* ② Panel — positioned above backdrop, bottom-right */}
+      {open && (
+        <Animated.View
+          style={[
+            styles.panel,
+            { transform: [{ translateY: panelTranslate }], opacity: panelOpacity },
+          ]}
+        >
+          <View style={styles.panelHeader}>
+            <View style={styles.panelHeaderLeft}>
+              <View style={styles.avatar}>
+                <Ionicons name="sparkles" size={14} color="#fff" />
+              </View>
+              <View>
+                <Text style={styles.panelTitle}>T&B Paving Assistant</Text>
+                <View style={styles.onlineRow}>
+                  <View style={styles.onlineDot} />
+                  <Text style={styles.onlineText}>AI-powered · instant replies</Text>
                 </View>
               </View>
-              <TouchableOpacity onPress={() => setOpen(false)} style={styles.closeBtn}>
-                <Ionicons name="close" size={20} color={C.muted} />
-              </TouchableOpacity>
             </View>
+            <TouchableOpacity onPress={() => setOpen(false)} style={styles.closeBtn}>
+              <Ionicons name="close" size={20} color={C.muted} />
+            </TouchableOpacity>
+          </View>
 
-            {/* Messages */}
-            <ScrollView
-              ref={scrollRef}
-              style={styles.messages}
-              contentContainerStyle={{ padding: S.md, gap: S.sm }}
-              showsVerticalScrollIndicator={false}
+          <ScrollView
+            ref={scrollRef}
+            style={styles.messages}
+            contentContainerStyle={{ padding: S.md, gap: S.sm }}
+            showsVerticalScrollIndicator={false}
+          >
+            {messages.map((m, i) => (
+              <View key={i} style={[styles.bubble, m.role === "user" ? styles.userBubble : styles.aiBubble]}>
+                <Text style={[styles.bubbleText, m.role === "user" ? styles.userText : styles.aiText]}>
+                  {m.content}
+                </Text>
+              </View>
+            ))}
+            {loading && (
+              <View style={[styles.bubble, styles.aiBubble, styles.typingBubble]}>
+                <ActivityIndicator size="small" color={C.brand} />
+              </View>
+            )}
+            {hasSuggestions && !loading && (
+              <View style={styles.suggestions}>
+                {SUGGESTIONS.map((s) => (
+                  <TouchableOpacity key={s} style={styles.suggestion} onPress={() => send(s)} activeOpacity={0.75}>
+                    <Text style={styles.suggestionText}>{s}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+          </ScrollView>
+
+          <View style={styles.inputRow}>
+            <TextInput
+              style={styles.input}
+              value={input}
+              onChangeText={setInput}
+              placeholder="Ask anything…"
+              placeholderTextColor={C.muted}
+              onSubmitEditing={() => send()}
+              returnKeyType="send"
+              blurOnSubmit={false}
+            />
+            <TouchableOpacity
+              style={[styles.sendBtn, (!input.trim() || loading) && styles.sendBtnDisabled]}
+              onPress={() => send()}
+              disabled={!input.trim() || loading}
+              activeOpacity={0.8}
             >
-              {messages.map((m, i) => (
-                <View key={i} style={[styles.bubble, m.role === "user" ? styles.userBubble : styles.aiBubble]}>
-                  <Text style={[styles.bubbleText, m.role === "user" ? styles.userText : styles.aiText]}>
-                    {m.content}
-                  </Text>
-                </View>
-              ))}
-              {loading && (
-                <View style={[styles.bubble, styles.aiBubble, styles.typingBubble]}>
-                  <ActivityIndicator size="small" color={C.brand} />
-                </View>
-              )}
-              {hasSuggestions && !loading && (
-                <View style={styles.suggestions}>
-                  {SUGGESTIONS.map((s) => (
-                    <TouchableOpacity key={s} style={styles.suggestion} onPress={() => send(s)} activeOpacity={0.75}>
-                      <Text style={styles.suggestionText}>{s}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              )}
-            </ScrollView>
+              <Ionicons name="send" size={16} color="#fff" />
+            </TouchableOpacity>
+          </View>
+        </Animated.View>
+      )}
 
-            {/* Input */}
-            <View style={styles.inputRow}>
-              <TextInput
-                style={styles.input}
-                value={input}
-                onChangeText={setInput}
-                placeholder="Ask anything…"
-                placeholderTextColor={C.muted}
-                onSubmitEditing={() => send()}
-                returnKeyType="send"
-                blurOnSubmit={false}
-              />
-              <TouchableOpacity
-                style={[styles.sendBtn, (!input.trim() || loading) && styles.sendBtnDisabled]}
-                onPress={() => send()}
-                disabled={!input.trim() || loading}
-                activeOpacity={0.8}
-              >
-                <Ionicons name="send" size={16} color="#fff" />
-              </TouchableOpacity>
-            </View>
-          </Animated.View>
+      {/* ③ FAB — topmost layer */}
+      <TouchableOpacity
+        style={[styles.fab, open && styles.fabOpen]}
+        onPress={() => setOpen(o => !o)}
+        activeOpacity={0.85}
+      >
+        <Ionicons name={open ? "close" : "chatbubble-ellipses"} size={24} color="#fff" />
+        {!open && (
+          <View style={styles.fabBadge}>
+            <Ionicons name="sparkles" size={9} color={C.brand} />
+          </View>
         )}
-
-        {/* Floating button */}
-        <TouchableOpacity
-          style={[styles.fab, open && styles.fabOpen]}
-          onPress={() => setOpen(o => !o)}
-          activeOpacity={0.85}
-        >
-          <Ionicons name={open ? "close" : "chatbubble-ellipses"} size={24} color="#fff" />
-          {!open && (
-            <View style={styles.fabBadge}>
-              <Ionicons name="sparkles" size={9} color={C.brand} />
-            </View>
-          )}
-        </TouchableOpacity>
-      </View>
+      </TouchableOpacity>
     </View>
   );
 }
 
-const PANEL_W = 340;
-
 const styles = StyleSheet.create({
-  // Closed: tiny anchor at bottom-right, passes through all touches
+  // Closed: tiny anchor at bottom-right
   containerClosed: {
     position: "absolute",
-    bottom: 24,
-    right: 20,
-    alignItems: "flex-end",
+    bottom: BOTTOM,
+    right: RIGHT,
     zIndex: 999,
   },
-  // Open: full screen so backdrop Pressable can receive outside clicks
+  // Open: full-screen so backdrop covers the whole page
   containerOpen: {
     position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
+    top: 0, left: 0, right: 0, bottom: 0,
     zIndex: 999,
   },
-  // Panel + FAB always anchored bottom-right
-  chatAnchor: {
-    position: "absolute",
-    bottom: 24,
-    right: 20,
-    alignItems: "flex-end",
-  },
+  // Panel: absolutely anchored bottom-right, above backdrop (rendered after it)
   panel: {
+    position: "absolute",
+    bottom: BOTTOM + FAB_SIZE + GAP,
+    right: RIGHT,
     width: PANEL_W,
-    height: 460,
+    height: PANEL_H,
     backgroundColor: C.surface,
     borderRadius: R.xl,
-    marginBottom: S.md,
     overflow: "hidden",
     borderWidth: 1,
     borderColor: C.border,
@@ -317,10 +310,18 @@ const styles = StyleSheet.create({
     alignItems: "center", justifyContent: "center",
   },
   sendBtnDisabled: { opacity: 0.4 },
+  // FAB: absolute bottom-right within full-screen container when open,
+  // or just sitting in the tiny containerClosed when closed
   fab: {
-    width: 52, height: 52, borderRadius: 26,
+    position: "absolute",
+    bottom: BOTTOM,
+    right: RIGHT,
+    width: FAB_SIZE,
+    height: FAB_SIZE,
+    borderRadius: FAB_SIZE / 2,
     backgroundColor: C.brandDark,
-    alignItems: "center", justifyContent: "center",
+    alignItems: "center",
+    justifyContent: "center",
     ...SHADOW.card,
     ...(Platform.OS === "web" ? { boxShadow: "0 4px 16px rgba(212,87,0,0.4)" } as any : {}),
   },
