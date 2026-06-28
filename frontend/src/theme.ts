@@ -1,4 +1,5 @@
 // T&B Paving — warm, trustworthy brand palette (v2)
+export const _v = 2;
 export const C = {
   brand: "#FC6A03",        // chosen blaze orange (accents, icons, highlights)
   brandDark: "#D45700",    // deeper shade for buttons/gradients (readable white text)
