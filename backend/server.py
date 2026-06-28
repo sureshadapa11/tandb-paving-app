@@ -119,6 +119,7 @@ class TaskBody(BaseModel):
 class QuoteBody(BaseModel):
     project_id: str = ""
     client_name: str
+    client_email: str = ""
     title: str = ""
     project_type: str = ""
     line_items: List[dict] = []
@@ -354,12 +355,16 @@ async def list_quotes(user=Depends(get_current_user)):
 
 
 @api_router.put("/quotes/{qid}")
-async def update_quote(qid: str, body: QuoteBody, user=Depends(get_current_user)):
+async def update_quote(qid: str, body: QuoteBody, background: BackgroundTasks, user=Depends(get_current_user)):
     subtotal, tax, total = compute_total(body.line_items, body.tax_percent)
+    existing = await db.quotes.find_one({"id": qid})
     d = body.dict()
     d.update({"subtotal": subtotal, "tax": tax, "total": total})
     await db.quotes.update_one({"id": qid}, {"$set": d})
     doc = await db.quotes.find_one({"id": qid})
+    # Send quote email when status first changes to "sent"
+    if body.status == "sent" and existing and existing.get("status") != "sent":
+        background.add_task(send_quote_email, clean(doc))
     return clean(doc)
 
 
@@ -471,11 +476,12 @@ async def public_gallery():
 
 
 @api_router.post("/reviews/submit")
-async def submit_review(body: ReviewSubmitBody):
+async def submit_review(body: ReviewSubmitBody, background: BackgroundTasks):
     """Public endpoint — no auth. Saves as pending for admin approval."""
     doc = body.dict()
     doc.update({"id": oid(), "status": "pending", "created_at": now_iso()})
     await db.testimonials.insert_one(doc)
+    background.add_task(send_review_notification, doc)
     return {"ok": True}
 
 
@@ -613,6 +619,94 @@ def send_owner_email(enq: dict):
         logger.info("Owner enquiry email sent.")
     except Exception as e:
         logger.error(f"SendGrid email failed (lead still saved): {e}")
+
+
+def send_review_notification(review: dict):
+    """Notify owner when a new review is submitted and awaiting approval."""
+    if not SENDGRID_API_KEY or not SENDER_EMAIL:
+        return
+    try:
+        from sendgrid import SendGridAPIClient
+        from sendgrid.helpers.mail import Mail
+        stars = "★" * int(review.get("stars", 5)) + "☆" * (5 - int(review.get("stars", 5)))
+        html = f"""
+        <h2>New review awaiting approval</h2>
+        <p>{stars}</p>
+        <p><strong>{review.get('name','')} · {review.get('town','')} · {review.get('job','')}</strong></p>
+        <blockquote style="border-left:4px solid #B5651D;padding-left:12px;color:#444;">
+          {review.get('text','')}
+        </blockquote>
+        <p><a href="https://frontend-khaki-tau-70.vercel.app/admin/testimonials" style="background:#B5651D;color:#fff;padding:10px 20px;border-radius:8px;text-decoration:none;">
+          Review in Admin Panel
+        </a></p>
+        <hr/><p style="color:#888">T&amp;B Paving — automated notification</p>
+        """
+        msg = Mail(from_email=SENDER_EMAIL, to_emails=OWNER_EMAIL,
+                   subject=f"New {review.get('stars',5)}★ review from {review.get('name','')}",
+                   html_content=html)
+        SendGridAPIClient(SENDGRID_API_KEY).send(msg)
+    except Exception as e:
+        logger.error(f"Review notification email failed: {e}")
+
+
+def send_quote_email(quote: dict):
+    """Send the quote to the customer by email."""
+    client_email = quote.get("client_email", "")
+    if not client_email or not SENDGRID_API_KEY or not SENDER_EMAIL:
+        return
+    try:
+        from sendgrid import SendGridAPIClient
+        from sendgrid.helpers.mail import Mail
+        rows = "".join(
+            f"<tr><td style='padding:8px;border-bottom:1px solid #eee'>{li.get('description','')}</td>"
+            f"<td style='padding:8px;border-bottom:1px solid #eee;text-align:right'>£{float(li.get('amount',0)):.2f}</td></tr>"
+            for li in quote.get("line_items", [])
+        )
+        tax_row = (
+            f"<tr><td style='padding:8px;color:#888'>VAT ({quote.get('tax_percent',0)}%)</td>"
+            f"<td style='padding:8px;text-align:right;color:#888'>£{float(quote.get('tax',0)):.2f}</td></tr>"
+            if quote.get("tax_percent", 0) else ""
+        )
+        html = f"""
+        <div style="font-family:sans-serif;max-width:600px;margin:auto">
+          <div style="background:#1A2A3A;padding:24px;border-radius:12px 12px 0 0;text-align:center">
+            <h1 style="color:#fff;margin:0;font-size:22px">T&amp;B Paving</h1>
+            <p style="color:rgba(255,255,255,0.6);margin:4px 0 0">Driveways · Patios · Paths</p>
+          </div>
+          <div style="padding:28px;border:1px solid #eee;border-top:none;border-radius:0 0 12px 12px">
+            <h2 style="color:#1A2A3A">Your Quote</h2>
+            <p>Dear {quote.get('client_name','')},</p>
+            <p>Thank you for considering T&amp;B Paving. Please find your quote below.</p>
+            {"<p><strong>Project type:</strong> " + quote.get('project_type','') + "</p>" if quote.get('project_type') else ""}
+            <table style="width:100%;border-collapse:collapse;margin:20px 0">
+              <thead>
+                <tr style="background:#f5f5f5">
+                  <th style="padding:10px;text-align:left">Description</th>
+                  <th style="padding:10px;text-align:right">Amount</th>
+                </tr>
+              </thead>
+              <tbody>{rows}</tbody>
+              <tfoot>
+                {tax_row}
+                <tr style="background:#1A2A3A">
+                  <td style="padding:12px;color:#fff;font-weight:bold">Total</td>
+                  <td style="padding:12px;color:#fff;font-weight:bold;text-align:right">£{float(quote.get('total',0)):.2f}</td>
+                </tr>
+              </tfoot>
+            </table>
+            <p>This quote is valid for 30 days. To accept or discuss further, please call us:</p>
+            <p style="font-size:18px;font-weight:bold">01376 618683 &nbsp;·&nbsp; 07717 315528</p>
+            <p style="color:#888;font-size:13px">T&amp;B Paving — Essex &amp; Suffolk</p>
+          </div>
+        </div>
+        """
+        msg = Mail(from_email=SENDER_EMAIL, to_emails=client_email,
+                   subject=f"Your quote from T&B Paving — £{float(quote.get('total',0)):.2f}",
+                   html_content=html)
+        SendGridAPIClient(SENDGRID_API_KEY).send(msg)
+        logger.info(f"Quote email sent to {client_email}")
+    except Exception as e:
+        logger.error(f"Quote email failed: {e}")
 
 
 @api_router.post("/enquiries")

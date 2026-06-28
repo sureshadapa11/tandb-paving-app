@@ -52,6 +52,7 @@ export default function Quotes() {
   const [saving, setSaving] = useState(false);
 
   const [clientName, setClientName] = useState("");
+  const [clientEmail, setClientEmail] = useState("");
   const [projectType, setProjectType] = useState("Block Paving");
   const [lineItems, setLineItems] = useState<LineItem[]>([emptyLine()]);
   const [taxPercent, setTaxPercent] = useState("20");
@@ -82,6 +83,7 @@ export default function Quotes() {
   const resetForm = () => {
     setSelectedId(null);
     setClientName("");
+    setClientEmail("");
     setProjectType("Block Paving");
     setLineItems([emptyLine()]);
     setTaxPercent("20");
@@ -90,6 +92,7 @@ export default function Quotes() {
   const loadQuoteIntoForm = (q: Quote) => {
     setSelectedId(q.id);
     setClientName(q.client_name);
+    setClientEmail((q as any).client_email || "");
     setProjectType(q.project_type || "");
   };
 
@@ -105,6 +108,7 @@ export default function Quotes() {
     setSaving(true);
     const body = {
       client_name: clientName,
+      client_email: clientEmail,
       project_type: projectType,
       status,
       line_items: lineItems.map((li) => ({
@@ -122,7 +126,14 @@ export default function Quotes() {
       }
       await load();
       resetForm();
-      Alert.alert("Saved", status === "sent" ? "Quote marked as sent." : "Draft saved.");
+      Alert.alert(
+        "Saved",
+        status === "sent"
+          ? clientEmail.trim()
+            ? `Quote sent. Email delivered to ${clientEmail.trim()}.`
+            : "Quote marked as sent. No email sent (no client email provided)."
+          : "Draft saved."
+      );
     } catch (e: any) {
       Alert.alert("Error", e.message || "Failed to save quote.");
     }
@@ -209,6 +220,14 @@ export default function Quotes() {
       <TextInput
         style={styles.input} value={clientName} onChangeText={setClientName}
         placeholder="e.g. John Smith" placeholderTextColor={P.muted}
+      />
+
+      <Text style={styles.fieldLabel}>Client Email</Text>
+      <TextInput
+        style={styles.input} value={clientEmail} onChangeText={setClientEmail}
+        placeholder="e.g. john@example.com (optional — for quote delivery)"
+        placeholderTextColor={P.muted}
+        keyboardType="email-address" autoCapitalize="none"
       />
 
       <Text style={styles.fieldLabel}>Project Type</Text>
