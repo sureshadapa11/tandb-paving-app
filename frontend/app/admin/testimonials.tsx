@@ -1,14 +1,14 @@
-import React, { useEffect, useState, useCallback, useRef } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
-  TextInput, ActivityIndicator, Alert, useWindowDimensions, Platform,
+  TextInput, ActivityIndicator, Alert, useWindowDimensions, Platform, Clipboard,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "@/src/context/AuthContext";
 import { api } from "@/src/api";
 import AdminSidebar from "@/src/components/AdminSidebar";
-import QRCode from "react-qr-code";
+import { Image } from "react-native";
 
 const P = {
   bg: "#F7F4F0", card: "#FFFFFF", navy: "#1A2A3A", copper: "#B5651D",
@@ -48,12 +48,59 @@ function StarPicker({ value, onChange }: { value: number; onChange: (n: number) 
   );
 }
 
+function ReplyBlock({ t, replies, replyLoadingId, generateReply, copyReply }: {
+  t: Testimonial;
+  replies: Record<string, string>;
+  replyLoadingId: string | null;
+  generateReply: (t: Testimonial) => void;
+  copyReply: (id: string) => void;
+}) {
+  const reply = replies[t.id];
+  const loading = replyLoadingId === t.id;
+  return (
+    <View style={styles.replyBlock}>
+      {reply ? (
+        <>
+          <View style={styles.replyHeader}>
+            <Ionicons name="sparkles" size={13} color={P.copper} />
+            <Text style={styles.replyLabel}>AI Reply</Text>
+            <TouchableOpacity onPress={() => copyReply(t.id)} style={styles.copyBtn} activeOpacity={0.7}>
+              <Ionicons name="copy-outline" size={13} color={P.copper} />
+              <Text style={styles.copyBtnText}>Copy</Text>
+            </TouchableOpacity>
+          </View>
+          <Text style={styles.replyText}>{reply}</Text>
+          <TouchableOpacity onPress={() => generateReply(t)} activeOpacity={0.7} style={styles.regenerateBtn}>
+            <Ionicons name="refresh-outline" size={12} color={P.muted} />
+            <Text style={styles.regenerateBtnText}>Regenerate</Text>
+          </TouchableOpacity>
+        </>
+      ) : (
+        <TouchableOpacity
+          style={[styles.generateReplyBtn, loading && styles.btnDisabled]}
+          onPress={() => generateReply(t)}
+          disabled={loading}
+          activeOpacity={0.8}
+        >
+          {loading ? (
+            <ActivityIndicator size="small" color={P.copper} />
+          ) : (
+            <>
+              <Ionicons name="sparkles" size={13} color={P.copper} />
+              <Text style={styles.generateReplyBtnText}>Generate AI Reply</Text>
+            </>
+          )}
+        </TouchableOpacity>
+      )}
+    </View>
+  );
+}
+
 export default function Testimonials() {
   const { user, loading, logout } = useAuth();
   const router = useRouter();
   const { width } = useWindowDimensions();
   const isDesktop = width >= 768;
-  const qrRef = useRef<any>(null);
 
   const [tab, setTab] = useState<Tab>("pending");
   const [pending, setPending] = useState<Testimonial[]>([]);
@@ -69,6 +116,8 @@ export default function Testimonials() {
   const [stars, setStars] = useState(5);
   const [text, setText] = useState("");
   const [formError, setFormError] = useState("");
+  const [replyLoadingId, setReplyLoadingId] = useState<string | null>(null);
+  const [replies, setReplies] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (!loading && !user) router.replace("/admin");
@@ -139,33 +188,42 @@ export default function Testimonials() {
     setSaving(false);
   };
 
+  const generateReply = async (t: Testimonial) => {
+    setReplyLoadingId(t.id);
+    try {
+      const data = await api.post("/ai/review-reply", {
+        reviewer_name: t.name,
+        review_text: t.text,
+        stars: t.stars,
+      });
+      setReplies((prev) => ({ ...prev, [t.id]: data.reply }));
+    } catch {
+      Alert.alert("Error", "Could not generate reply. Please try again.");
+    }
+    setReplyLoadingId(null);
+  };
+
+  const copyReply = (id: string) => {
+    const reply = replies[id];
+    if (!reply) return;
+    if (Platform.OS === "web") {
+      (globalThis as any).navigator?.clipboard?.writeText(reply).catch(() => {
+        Clipboard.setString(reply);
+      });
+    } else {
+      Clipboard.setString(reply);
+    }
+    Alert.alert("Copied", "Reply copied to clipboard.");
+  };
+
   const downloadQR = () => {
     if (Platform.OS !== "web") return;
-    const svg = document.getElementById("tb-review-qr");
-    if (!svg) return;
-    const svgData = new XMLSerializer().serializeToString(svg);
-    const canvas = document.createElement("canvas");
-    canvas.width = 500; canvas.height = 560;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    const img = new Image();
-    img.onload = () => {
-      ctx.fillStyle = "#FFFFFF";
-      ctx.fillRect(0, 0, 500, 560);
-      ctx.drawImage(img, 50, 20, 400, 400);
-      ctx.fillStyle = "#1A2A3A";
-      ctx.font = "bold 18px sans-serif";
-      ctx.textAlign = "center";
-      ctx.fillText("T&B Paving — Leave a Review", 250, 452);
-      ctx.font = "14px sans-serif";
-      ctx.fillStyle = "#7A6A5A";
-      ctx.fillText("Scan with your phone camera", 250, 480);
-      const link = document.createElement("a");
-      link.download = "TB-Paving-Review-QR.png";
-      link.href = canvas.toDataURL("image/png");
-      link.click();
-    };
-    img.src = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(svgData)));
+    const link = (globalThis as any).document?.createElement("a");
+    if (!link) return;
+    link.download = "TB-Paving-Review-QR.png";
+    link.href = `https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(REVIEW_URL)}&size=500x500&color=1A2A3A&bgcolor=FFFFFF`;
+    link.target = "_blank";
+    link.click();
   };
 
   if (loading || fetching) {
@@ -249,6 +307,7 @@ export default function Testimonials() {
                     </View>
                     <StarDisplay stars={t.stars} />
                     <Text style={styles.reviewText}>"{t.text}"</Text>
+                    <ReplyBlock t={t} replies={replies} replyLoadingId={replyLoadingId} generateReply={generateReply} copyReply={copyReply} />
                     <View style={styles.reviewActions}>
                       <TouchableOpacity
                         style={[styles.approveBtn, actingId === t.id && styles.btnDisabled]}
@@ -316,6 +375,7 @@ export default function Testimonials() {
                       </View>
                       <StarDisplay stars={t.stars} />
                       <Text style={styles.reviewText}>"{t.text}"</Text>
+                      <ReplyBlock t={t} replies={replies} replyLoadingId={replyLoadingId} generateReply={generateReply} copyReply={copyReply} />
                     </View>
                   ))}
                 </View>
@@ -378,13 +438,10 @@ export default function Testimonials() {
                   Print this on your business cards, invoices, or display it at job sites. Customers scan it to leave a review instantly.
                 </Text>
 
-                <View style={styles.qrBox} ref={qrRef}>
-                  <QRCode
-                    id="tb-review-qr"
-                    value={REVIEW_URL}
-                    size={240}
-                    fgColor={P.navy}
-                    bgColor="#FFFFFF"
+                <View style={styles.qrBox}>
+                  <Image
+                    source={{ uri: `https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(REVIEW_URL)}&size=240x240&color=1A2A3A&bgcolor=FFFFFF` }}
+                    style={{ width: 240, height: 240 }}
                   />
                 </View>
 
@@ -561,4 +618,19 @@ const styles = StyleSheet.create({
   },
   statValue: { fontSize: 32, fontWeight: "800", color: P.navy },
   statLabel: { fontSize: 12, color: P.muted, fontWeight: "500", marginTop: 4, textAlign: "center" },
+  replyBlock: { marginTop: 12 },
+  generateReplyBtn: {
+    flexDirection: "row", alignItems: "center", gap: 6,
+    paddingVertical: 8, paddingHorizontal: 12, borderRadius: 8,
+    borderWidth: 1.5, borderColor: P.copper, borderStyle: "dashed",
+    alignSelf: "flex-start", backgroundColor: "#FFFBF5",
+  },
+  generateReplyBtnText: { fontSize: 12, fontWeight: "700", color: P.copper },
+  replyHeader: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 6 },
+  replyLabel: { fontSize: 12, fontWeight: "700", color: P.copper, flex: 1 },
+  copyBtn: { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, backgroundColor: "#FFFBF5", borderWidth: 1, borderColor: "#E8D5B8" },
+  copyBtnText: { fontSize: 11, fontWeight: "700", color: P.copper },
+  replyText: { fontSize: 12, color: P.ink, lineHeight: 18, backgroundColor: "#FFFBF5", borderRadius: 8, padding: 10, borderWidth: 1, borderColor: "#E8D5B8" },
+  regenerateBtn: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 6, alignSelf: "flex-start" },
+  regenerateBtnText: { fontSize: 11, color: P.muted, fontWeight: "600" },
 });

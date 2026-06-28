@@ -3,9 +3,8 @@ import {
   View, Text, StyleSheet, ScrollView, Pressable, Linking, Animated, Platform, Modal,
   TouchableOpacity,
 } from "react-native";
-import QRCode from "react-qr-code";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { Head } from "expo-router/head";
+import Head from "expo-router/head";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
@@ -492,15 +491,11 @@ export default function Home() {
 
           {/* ── Review CTA card ── */}
           <View style={[styles.reviewCta, (isDesktop || isTablet) && styles.reviewCtaDesktop]}>
-            {/* QR code — desktop only */}
+            {/* Review icon — desktop only */}
             {(isDesktop || isTablet) && (
               <View style={styles.reviewQrBox}>
-                <QRCode
-                  value="https://frontend-khaki-tau-70.vercel.app/review"
-                  size={110}
-                  fgColor="#1A2A3A"
-                  bgColor="#FFFFFF"
-                />
+                <Ionicons name="star" size={48} color={C.gold} />
+                <Text style={{ fontSize: 13, color: C.muted, marginTop: 8, textAlign: "center" }}>Leave a review</Text>
               </View>
             )}
 

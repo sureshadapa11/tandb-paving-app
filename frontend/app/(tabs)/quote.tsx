@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from "react";
 import {
   View, Text, StyleSheet, ScrollView, Pressable, Linking, KeyboardAvoidingView, Platform, ActivityIndicator,
+  TouchableOpacity,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Head } from "expo-router/head";
+import { useRouter } from "expo-router";
+import Head from "expo-router/head";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { api } from "@/src/api";
@@ -17,6 +19,7 @@ const SERVICE_NAMES = SERVICES.map((s) => s.title);
 
 export default function Quote() {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const { isDesktop, hPad } = useResponsive();
 
   const [bizContact, setBizContact] = useState({ phone: BIZ.phone, mobile: BIZ.mobile, email: BIZ.email, hours: BIZ.hours });
@@ -102,6 +105,22 @@ export default function Quote() {
           showsVerticalScrollIndicator={false}
         >
           <MaxWidth>
+            {/* AI Estimator banner */}
+            <TouchableOpacity
+              style={styles.estimatorBanner}
+              onPress={() => router.push("/estimator" as any)}
+              activeOpacity={0.85}
+            >
+              <View style={styles.estimatorBannerLeft}>
+                <Ionicons name="sparkles" size={20} color={C.brand} />
+                <View>
+                  <Text style={styles.estimatorBannerTitle}>Not sure of your budget?</Text>
+                  <Text style={styles.estimatorBannerSub}>Get an instant AI cost estimate — no personal details needed</Text>
+                </View>
+              </View>
+              <Ionicons name="arrow-forward" size={18} color={C.brand} />
+            </TouchableOpacity>
+
             {/* Contact quick actions */}
             <View style={[styles.contactRow, isDesktop && { gap: S.lg }]}>
               <Pressable testID="quote-call" style={styles.contactBtn} onPress={() => call(bizContact.phone)}>
@@ -215,6 +234,14 @@ const styles = StyleSheet.create({
   headerOuter: { paddingBottom: S.md, backgroundColor: C.surface, borderBottomWidth: 1, borderBottomColor: C.border },
   title: { fontSize: 28, fontWeight: "900", color: C.ink, letterSpacing: -0.8 },
   twoCol: { flexDirection: "row", gap: S.xl, alignItems: "flex-start" },
+  estimatorBanner: {
+    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
+    backgroundColor: C.accentSoft, borderRadius: R.lg, padding: S.md,
+    borderWidth: 1, borderColor: C.accent, marginBottom: S.lg, gap: S.md,
+  },
+  estimatorBannerLeft: { flexDirection: "row", alignItems: "center", gap: S.sm, flex: 1 },
+  estimatorBannerTitle: { fontSize: 13, fontWeight: "800", color: C.brandDark },
+  estimatorBannerSub: { fontSize: 11, color: C.inkSoft, marginTop: 2 },
   contactRow: { flexDirection: "row", gap: S.md },
   contactBtn: { flex: 1, backgroundColor: C.surface, borderRadius: R.lg, padding: S.md, alignItems: "center", borderWidth: 1, borderColor: C.border, ...SHADOW.card },
   contactLabel: { fontSize: 11, fontWeight: "700", color: C.muted, marginTop: 6 },

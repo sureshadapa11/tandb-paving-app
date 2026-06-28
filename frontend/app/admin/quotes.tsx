@@ -9,6 +9,8 @@ import { useAuth } from "@/src/context/AuthContext";
 import { api } from "@/src/api";
 import AdminSidebar from "@/src/components/AdminSidebar";
 
+const BACKEND = process.env.EXPO_PUBLIC_BACKEND_URL ?? "";
+
 const P = {
   bg: "#F7F4F0", card: "#FFFFFF", navy: "#1A2A3A", copper: "#B5651D",
   ink: "#1A2A3A", muted: "#7A6A5A", border: "#E8E0D4",
@@ -59,6 +61,8 @@ export default function Quotes() {
   const [projectType, setProjectType] = useState("Block Paving");
   const [lineItems, setLineItems] = useState<LineItem[]>([emptyLine()]);
   const [taxPercent, setTaxPercent] = useState("20");
+  const [aiDesc, setAiDesc] = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) router.replace("/admin");
@@ -263,6 +267,39 @@ export default function Quotes() {
     ]);
   };
 
+  const generateLineItems = async () => {
+    if (!aiDesc.trim()) return;
+    setAiLoading(true);
+    try {
+      const res = await fetch(`${BACKEND}/api/ai/estimate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ description: aiDesc, area: "", quality: "standard", location: "Essex & Suffolk" }),
+      });
+      const data = await res.json();
+      const text: string = data.estimate ?? "";
+      const parsed: LineItem[] = [];
+      for (const line of text.split("\n")) {
+        const match = line.match(/^[-•*]?\s*(.+?)[:\s]+£([\d,]+(?:\.\d+)?)/);
+        if (match) {
+          const desc = match[1].trim().replace(/\*+/g, "");
+          const price = match[2].replace(/,/g, "");
+          if (desc && price && parseFloat(price) > 0) {
+            parsed.push({ description: desc, qty: "1", unit_price: price });
+          }
+        }
+      }
+      if (parsed.length > 0) {
+        setLineItems(parsed);
+      } else {
+        Alert.alert("AI Estimate", "Couldn't extract line items automatically. Review the estimate below and add manually.\n\n" + text.slice(0, 400));
+      }
+    } catch {
+      Alert.alert("Error", "AI estimate failed. Please try again.");
+    }
+    setAiLoading(false);
+  };
+
   const setLine = (i: number, field: keyof LineItem, val: string) => {
     setLineItems((prev) => prev.map((li, idx) => idx === i ? { ...li, [field]: val } : li));
   };
@@ -365,6 +402,39 @@ export default function Quotes() {
         style={styles.input} value={projectType} onChangeText={setProjectType}
         placeholder="e.g. Block Paving Driveway" placeholderTextColor={P.muted}
       />
+
+      {/* AI Line-Item Generator */}
+      <View style={styles.aiSection}>
+        <View style={styles.aiSectionHeader}>
+          <Ionicons name="sparkles" size={15} color={P.copper} />
+          <Text style={styles.aiSectionTitle}>AI Line-Item Generator</Text>
+        </View>
+        <Text style={styles.aiSectionSub}>Describe the project and AI will generate costed line items automatically.</Text>
+        <TextInput
+          style={[styles.input, styles.aiInput]}
+          value={aiDesc}
+          onChangeText={setAiDesc}
+          placeholder="e.g. Block paving driveway, 40 sqm, remove existing tarmac, new edging, standard grey blocks"
+          placeholderTextColor={P.muted}
+          multiline
+          numberOfLines={3}
+        />
+        <TouchableOpacity
+          style={[styles.aiBtn, (!aiDesc.trim() || aiLoading) && styles.btnDisabled]}
+          onPress={generateLineItems}
+          disabled={!aiDesc.trim() || aiLoading}
+          activeOpacity={0.8}
+        >
+          {aiLoading ? (
+            <ActivityIndicator size="small" color="#FFFFFF" />
+          ) : (
+            <>
+              <Ionicons name="flash" size={14} color="#FFFFFF" />
+              <Text style={styles.aiBtnText}>Generate Line Items</Text>
+            </>
+          )}
+        </TouchableOpacity>
+      </View>
 
       <Text style={styles.fieldLabel}>Line Items</Text>
       {lineItems.map((li, i) => (
@@ -570,4 +640,18 @@ const styles = StyleSheet.create({
   },
   statusPillText: { fontSize: 10, fontWeight: "700", color: P.muted },
   emptyText: { color: P.muted, fontSize: 14, padding: 12 },
+  aiSection: {
+    marginTop: 12, backgroundColor: "#FFFBF5", borderRadius: 10,
+    borderWidth: 1.5, borderColor: "#E8D5B8", padding: 14,
+  },
+  aiSectionHeader: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 4 },
+  aiSectionTitle: { fontSize: 13, fontWeight: "700", color: P.copper },
+  aiSectionSub: { fontSize: 11, color: P.muted, marginBottom: 10, lineHeight: 16 },
+  aiInput: { marginBottom: 0, minHeight: 72, textAlignVertical: "top" },
+  aiBtn: {
+    flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6,
+    marginTop: 10, backgroundColor: P.copper, borderRadius: 8,
+    paddingVertical: 10, paddingHorizontal: 16,
+  },
+  aiBtnText: { color: "#FFFFFF", fontSize: 13, fontWeight: "700" },
 });

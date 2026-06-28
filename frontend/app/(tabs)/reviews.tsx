@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-import { Head } from "expo-router/head";
+import Head from "expo-router/head";
 import { Ionicons } from "@expo/vector-icons";
 import { C, S, R, SHADOW } from "@/src/theme";
 import { Eyebrow, Stars, Btn, MaxWidth } from "@/src/components/ui";

@@ -5,12 +5,14 @@ import { Ionicons } from "@expo/vector-icons";
 import { C } from "@/src/theme";
 import TopNav from "@/src/components/TopNav";
 import { NavProvider } from "@/src/contexts/nav-context";
+import ChatBubble from "@/src/components/ChatBubble";
 
 export default function TabsLayout() {
   return (
     <NavProvider>
       <View style={{ flex: 1 }}>
         <TopNav />
+        <ChatBubble />
         <Tabs
           screenOptions={{
             headerShown: false,

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { View, Text, StyleSheet, FlatList, Pressable, Modal, useWindowDimensions, ActivityIndicator } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Head } from "expo-router/head";
+import Head from "expo-router/head";
 import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 import { C, S, R } from "@/src/theme";
