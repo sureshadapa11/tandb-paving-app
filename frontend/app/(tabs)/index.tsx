@@ -28,12 +28,22 @@ const SLIDES = [
   {
     img: require("../../assets/images/grey-porcelain-patio.jpg"),
     headline: "Stunning Patios &\nGarden Spaces",
-    sub: "Natural stone, porcelain & Indian sandstone patios. Crafted to impress.",
+    sub: "Natural stone, porcelain & Indian sandstone. Designed and built to impress.",
   },
   {
     img: require("../../assets/images/large-resin-driveway.jpg"),
     headline: "Resin Bound Driveways\nBuilt to Last",
     sub: "Seamless, permeable resin surfaces in modern finishes. Free site survey available.",
+  },
+  {
+    img: require("../../assets/images/patio-garden.jpg"),
+    headline: "Beautifully Crafted\nOutdoor Living Spaces",
+    sub: "Transform your garden into a space you love. Quality workmanship, guaranteed.",
+  },
+  {
+    img: require("../../assets/images/sandstone-patio.jpg"),
+    headline: "Indian Sandstone —\nTimeless Elegance",
+    sub: "Hand-laid natural sandstone that weathers beautifully and lasts a lifetime.",
   },
 ];
 
@@ -99,8 +109,8 @@ export default function Home() {
     sectionY.current[key] = e.nativeEvent.layout.y;
   };
 
-  const heroH = isDesktop ? 640 : isTablet ? 540 : 480;
-  const heroTitleSize = isDesktop ? 52 : isTablet ? 42 : 36;
+  const heroH = isDesktop ? 720 : isTablet ? 580 : 520;
+  const heroTitleSize = isDesktop ? 54 : isTablet ? 44 : 36;
 
   return (
     <ScrollView
@@ -113,58 +123,85 @@ export default function Home() {
     >
       {/* ── HERO SLIDER ── */}
       <View style={[styles.hero, { height: heroH }]}>
-        {/* Background image — crossfades */}
+        {/* Crossfading background */}
         <Animated.View style={[StyleSheet.absoluteFill, { opacity: fadeAnim }]}>
           <Image source={SLIDES[slideIdx].img} style={StyleSheet.absoluteFill} contentFit="cover" />
-          <LinearGradient
-            colors={["rgba(10,8,5,0.18)", "rgba(10,8,5,0.80)"]}
-            style={StyleSheet.absoluteFill}
-          />
         </Animated.View>
+        {/* Cinematic overlay — even dark film */}
+        <LinearGradient
+          colors={["rgba(8,5,3,0.52)", "rgba(8,5,3,0.38)", "rgba(8,5,3,0.72)"]}
+          locations={[0, 0.45, 1]}
+          style={StyleSheet.absoluteFill}
+        />
 
-        <MaxWidth style={{ flex: 1, justifyContent: "flex-end" }}>
+        {/* Desktop side arrows */}
+        {isDesktop && (
+          <Pressable
+            onPress={() => goSlide((slideIdx - 1 + SLIDES.length) % SLIDES.length)}
+            style={[styles.sideArrow, { left: hPad }]}
+          >
+            <Ionicons name="chevron-back" size={24} color="#fff" />
+          </Pressable>
+        )}
+        {isDesktop && (
+          <Pressable
+            onPress={() => goSlide((slideIdx + 1) % SLIDES.length)}
+            style={[styles.sideArrow, { right: hPad }]}
+          >
+            <Ionicons name="chevron-forward" size={24} color="#fff" />
+          </Pressable>
+        )}
+
+        {/* Centered content */}
+        <MaxWidth style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
           <Animated.View style={[styles.heroContent, { paddingHorizontal: hPad, opacity: fadeAnim }]}>
+            {/* Classic eyebrow badge */}
             <View style={styles.heroBadge}>
-              <Ionicons name="shield-checkmark" size={13} color={C.accent} />
+              <View style={styles.heroBadgeLine} />
+              <Ionicons name="shield-checkmark" size={12} color={C.accent} />
               <Text style={styles.heroBadgeText}>{BIZ.since.toUpperCase()}</Text>
+              <View style={styles.heroBadgeLine} />
             </View>
-            <Text style={[styles.heroTitle, { fontSize: heroTitleSize, lineHeight: heroTitleSize * 1.1 }]}>
+
+            {/* Headline */}
+            <Text style={[styles.heroTitle, { fontSize: heroTitleSize, lineHeight: heroTitleSize * 1.12 }]}>
               {SLIDES[slideIdx].headline}
             </Text>
+
+            {/* Decorative rule */}
+            <View style={styles.heroRule}>
+              <View style={styles.heroRuleLine} />
+              <View style={styles.heroRuleDiamond} />
+              <View style={styles.heroRuleLine} />
+            </View>
+
+            {/* Subtext */}
             <Text style={styles.heroSub}>{SLIDES[slideIdx].sub}</Text>
-            <View style={[styles.heroBtns, isDesktop && { flexDirection: "row", gap: S.md }]}>
+
+            {/* Buttons */}
+            <View style={[styles.heroBtns, isDesktop && { flexDirection: "row", gap: S.lg, justifyContent: "center" }]}>
               <Btn
                 testID="hero-quote-btn"
                 label="Get a Free Quote"
                 icon="calculator"
                 onPress={goQuote}
-                style={isDesktop ? { alignSelf: "flex-start", paddingHorizontal: 32 } : { flex: 1 }}
+                style={isDesktop ? { paddingHorizontal: 36 } : { alignSelf: "center", paddingHorizontal: 28 }}
               />
-              <Pressable onPress={call} style={[styles.heroCallBtn, !isDesktop && { marginTop: S.md }]}>
-                <Ionicons name="call" size={16} color={C.surface} />
+              <Pressable onPress={call} style={[styles.heroCallBtn, !isDesktop && { marginTop: S.md, alignSelf: "center" }]}>
+                <Ionicons name="call" size={15} color={C.surface} />
                 <Text style={styles.heroCallText}>{BIZ.phone}</Text>
               </Pressable>
             </View>
           </Animated.View>
         </MaxWidth>
 
-        {/* Slide dots + arrows */}
+        {/* Slide counter + tick marks at bottom */}
         <View style={styles.slideControls}>
-          {isDesktop && (
-            <Pressable onPress={() => goSlide((slideIdx - 1 + SLIDES.length) % SLIDES.length)} style={styles.slideArrow}>
-              <Ionicons name="chevron-back" size={22} color="#fff" />
+          {SLIDES.map((_, i) => (
+            <Pressable key={i} onPress={() => goSlide(i)} style={styles.slideTick}>
+              <View style={[styles.tickBar, i === slideIdx && styles.tickBarActive]} />
             </Pressable>
-          )}
-          <View style={styles.slideDots}>
-            {SLIDES.map((_, i) => (
-              <Pressable key={i} onPress={() => goSlide(i)} style={[styles.dot, i === slideIdx && styles.dotActive]} />
-            ))}
-          </View>
-          {isDesktop && (
-            <Pressable onPress={() => goSlide((slideIdx + 1) % SLIDES.length)} style={styles.slideArrow}>
-              <Ionicons name="chevron-forward" size={22} color="#fff" />
-            </Pressable>
-          )}
+          ))}
         </View>
       </View>
 
@@ -517,41 +554,68 @@ function FaqAccordion({ faqs, isDesktop }: { faqs: typeof FAQS; isDesktop: boole
 }
 
 const styles = StyleSheet.create({
-  hero: { justifyContent: "flex-end" },
-  heroContent: { paddingBottom: 56 },
-  slideControls: {
-    position: "absolute", bottom: 18, left: 0, right: 0,
-    flexDirection: "row", alignItems: "center", justifyContent: "center", gap: S.md,
-  },
-  slideArrow: {
-    width: 38, height: 38, borderRadius: 19,
-    backgroundColor: "rgba(255,255,255,0.18)",
+  hero: { justifyContent: "center", overflow: "hidden" },
+  heroContent: { alignItems: "center" },
+  sideArrow: {
+    position: "absolute", top: "50%",
+    width: 44, height: 44, borderRadius: 22,
+    backgroundColor: "rgba(255,255,255,0.12)",
+    borderWidth: 1, borderColor: "rgba(255,255,255,0.25)",
     alignItems: "center", justifyContent: "center",
+    zIndex: 10,
   },
-  slideDots: { flexDirection: "row", gap: 8, alignItems: "center" },
-  dot: {
-    width: 8, height: 8, borderRadius: 4,
-    backgroundColor: "rgba(255,255,255,0.45)",
+  slideControls: {
+    position: "absolute", bottom: 22, left: 0, right: 0,
+    flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6,
   },
-  dotActive: { width: 24, backgroundColor: C.accent },
+  slideTick: { paddingVertical: 8, paddingHorizontal: 3 },
+  tickBar: {
+    width: 28, height: 2, borderRadius: 1,
+    backgroundColor: "rgba(255,255,255,0.35)",
+  },
+  tickBarActive: { width: 48, backgroundColor: C.accent },
   heroBadge: {
-    flexDirection: "row", alignItems: "center", gap: 6,
-    alignSelf: "flex-start",
-    backgroundColor: "rgba(255,255,255,0.14)",
-    paddingHorizontal: S.md, paddingVertical: 7,
-    borderRadius: R.pill, marginBottom: S.md,
+    flexDirection: "row", alignItems: "center", gap: S.sm,
+    marginBottom: S.lg,
   },
-  heroBadgeText: { color: C.accent, fontWeight: "800", fontSize: 11, letterSpacing: 1.5 },
-  heroTitle: { color: C.surface, fontWeight: "900", letterSpacing: -1, maxWidth: 700 },
-  heroSub: { color: "rgba(255,255,255,0.88)", fontSize: 16, lineHeight: 24, marginTop: S.md, maxWidth: 560 },
-  heroBtns: { marginTop: S.xl },
+  heroBadgeLine: { flex: 1, height: 1, backgroundColor: "rgba(255,255,255,0.35)", maxWidth: 40 },
+  heroBadgeText: { color: C.accent, fontWeight: "700", fontSize: 11, letterSpacing: 2.5 },
+  heroTitle: {
+    color: "#FFFFFF",
+    fontWeight: "800",
+    letterSpacing: 0.5,
+    textAlign: "center",
+    maxWidth: 780,
+    textShadowColor: "rgba(0,0,0,0.4)",
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 8,
+  },
+  heroRule: {
+    flexDirection: "row", alignItems: "center", gap: S.sm,
+    marginTop: S.lg, marginBottom: S.md,
+  },
+  heroRuleLine: { flex: 1, height: 1, backgroundColor: "rgba(255,255,255,0.3)", maxWidth: 80 },
+  heroRuleDiamond: {
+    width: 7, height: 7,
+    backgroundColor: C.accent,
+    transform: [{ rotate: "45deg" }],
+  },
+  heroSub: {
+    color: "rgba(255,255,255,0.85)",
+    fontSize: 15,
+    lineHeight: 24,
+    textAlign: "center",
+    maxWidth: 520,
+    letterSpacing: 0.2,
+  },
+  heroBtns: { marginTop: S.xl, alignItems: "center" },
   heroCallBtn: {
     flexDirection: "row", alignItems: "center", gap: 8,
-    borderWidth: 1.5, borderColor: "rgba(255,255,255,0.5)",
-    paddingHorizontal: S.lg, paddingVertical: 14,
-    borderRadius: R.pill, alignSelf: "flex-start",
+    borderWidth: 1, borderColor: "rgba(255,255,255,0.45)",
+    paddingHorizontal: S.xl, paddingVertical: 13,
+    borderRadius: R.pill,
   },
-  heroCallText: { color: C.surface, fontWeight: "700", fontSize: 14 },
+  heroCallText: { color: "rgba(255,255,255,0.92)", fontWeight: "600", fontSize: 14, letterSpacing: 0.3 },
   statsBar: { backgroundColor: C.ink },
   statsRow: { flexDirection: "row", paddingVertical: S.lg },
   stat: { flex: 1, alignItems: "center" },
