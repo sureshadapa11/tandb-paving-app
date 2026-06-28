@@ -303,11 +303,12 @@ export default function Testimonials() {
                           onPress={() => deleteItem(t.id)}
                           disabled={actingId === t.id}
                           activeOpacity={0.7}
+                          style={{ padding: 8, borderRadius: 8, backgroundColor: "#FEF2F2" }}
                         >
                           {actingId === t.id ? (
                             <ActivityIndicator size="small" color={P.error} />
                           ) : (
-                            <Ionicons name="trash-outline" size={18} color={P.error} />
+                            <Ionicons name="trash-outline" size={20} color={P.error} />
                           )}
                         </TouchableOpacity>
                       </View>
@@ -439,11 +440,11 @@ const styles = StyleSheet.create({
   tabBarContent: { paddingHorizontal: 16, paddingVertical: 10, gap: 8, flexDirection: "row" },
   tabBtn: {
     flexDirection: "row", alignItems: "center", gap: 6,
-    paddingVertical: 7, paddingHorizontal: 14, borderRadius: 20,
+    paddingVertical: 10, paddingHorizontal: 16, borderRadius: 20, minHeight: 40,
     backgroundColor: "#F7F4F0", borderWidth: 1, borderColor: P.border,
   },
   tabBtnActive: { backgroundColor: P.copper, borderColor: P.copper },
-  tabBtnText: { fontSize: 13, fontWeight: "600", color: P.muted },
+  tabBtnText: { fontSize: 14, fontWeight: "600", color: P.muted },
   tabBtnTextActive: { color: "#FFFFFF" },
   tabBadge: {
     minWidth: 18, height: 18, borderRadius: 9, backgroundColor: "#3B82F6",
@@ -485,15 +486,15 @@ const styles = StyleSheet.create({
   reviewActions: { flexDirection: "row", gap: 10, marginTop: 14 },
   approveBtn: {
     flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6,
-    backgroundColor: P.success, borderRadius: 8, paddingVertical: 10,
+    backgroundColor: P.success, borderRadius: 10, paddingVertical: 14, minHeight: 48,
   },
-  approveBtnText: { color: "#FFFFFF", fontSize: 14, fontWeight: "700" },
+  approveBtnText: { color: "#FFFFFF", fontSize: 15, fontWeight: "700" },
   rejectBtn: {
     flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6,
-    backgroundColor: "#FEF2F2", borderRadius: 8, paddingVertical: 10,
-    borderWidth: 1, borderColor: "#FECACA",
+    backgroundColor: "#FEF2F2", borderRadius: 10, paddingVertical: 14, minHeight: 48,
+    borderWidth: 1.5, borderColor: "#FECACA",
   },
-  rejectBtnText: { color: P.error, fontSize: 14, fontWeight: "700" },
+  rejectBtnText: { color: P.error, fontSize: 15, fontWeight: "700" },
   btnDisabled: { opacity: 0.6 },
   cardGrid: { flexDirection: "row", flexWrap: "wrap", gap: 14 },
   formCard: {
@@ -516,9 +517,9 @@ const styles = StyleSheet.create({
   textArea: { minHeight: 90, paddingTop: 10 },
   addBtn: {
     flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: P.copper,
-    borderRadius: 10, paddingVertical: 12, justifyContent: "center", marginTop: 4,
+    borderRadius: 10, paddingVertical: 15, justifyContent: "center", marginTop: 8, minHeight: 52,
   },
-  addBtnText: { color: "#FFFFFF", fontSize: 14, fontWeight: "700" },
+  addBtnText: { color: "#FFFFFF", fontSize: 15, fontWeight: "700" },
   qrCard: {
     backgroundColor: "#FFFFFF", borderRadius: 16, padding: 24,
     borderWidth: 1, borderColor: P.border, alignItems: "center", marginBottom: 16,
@@ -534,10 +535,10 @@ const styles = StyleSheet.create({
   qrUrl: { fontSize: 12, color: P.copper, fontWeight: "600", marginBottom: 20, textAlign: "center" },
   downloadBtn: {
     flexDirection: "row", alignItems: "center", gap: 8,
-    backgroundColor: P.navy, borderRadius: 10, paddingVertical: 13, paddingHorizontal: 24,
-    marginBottom: 20,
+    backgroundColor: P.navy, borderRadius: 10, paddingVertical: 15, paddingHorizontal: 28,
+    marginBottom: 20, minHeight: 52,
   },
-  downloadBtnText: { color: "#FFFFFF", fontSize: 14, fontWeight: "700" },
+  downloadBtnText: { color: "#FFFFFF", fontSize: 15, fontWeight: "700" },
   qrTipBox: {
     flexDirection: "row", alignItems: "flex-start", gap: 10,
     backgroundColor: "#FEF3C7", borderRadius: 10, padding: 14,
