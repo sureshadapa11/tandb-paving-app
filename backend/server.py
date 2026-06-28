@@ -475,16 +475,35 @@ async def delete_inventory(iid: str, user=Depends(get_current_user)):
 # ---------- Photos ----------
 @api_router.post("/photos")
 async def create_photo(body: PhotoBody, user=Depends(get_current_user)):
+    count = await db.photos.count_documents({"owner_id": user["id"]})
     doc = body.dict()
-    doc.update({"id": oid(), "owner_id": user["id"], "created_at": now_iso()})
+    doc.update({"id": oid(), "owner_id": user["id"], "created_at": now_iso(), "sort_order": count})
     await db.photos.insert_one(doc)
     return clean(doc)
 
 
 @api_router.get("/photos")
 async def list_photos(user=Depends(get_current_user)):
-    docs = await db.photos.find({"owner_id": user["id"]}).sort("created_at", -1).to_list(500)
+    docs = await db.photos.find({"owner_id": user["id"]}).sort([("sort_order", 1), ("created_at", -1)]).to_list(500)
     return [clean(d) for d in docs]
+
+
+@api_router.patch("/photos/{pid}/order")
+async def reorder_photo(pid: str, direction: str, user=Depends(get_current_user)):
+    """Swap sort_order with the adjacent photo. direction: 'up' or 'down'."""
+    docs = await db.photos.find({"owner_id": user["id"]}).sort([("sort_order", 1), ("created_at", -1)]).to_list(500)
+    idx = next((i for i, d in enumerate(docs) if d["id"] == pid), None)
+    if idx is None:
+        raise HTTPException(404, "Photo not found")
+    swap_idx = idx - 1 if direction == "up" else idx + 1
+    if swap_idx < 0 or swap_idx >= len(docs):
+        return {"ok": True}
+    a, b = docs[idx], docs[swap_idx]
+    a_order = a.get("sort_order", idx)
+    b_order = b.get("sort_order", swap_idx)
+    await db.photos.update_one({"id": a["id"]}, {"$set": {"sort_order": b_order}})
+    await db.photos.update_one({"id": b["id"]}, {"$set": {"sort_order": a_order}})
+    return {"ok": True}
 
 
 @api_router.delete("/photos/{pid}")
@@ -504,7 +523,7 @@ async def public_testimonials():
 @api_router.get("/public/gallery")
 async def public_gallery():
     """Public — returns all uploaded gallery photos."""
-    docs = await db.photos.find({}).sort("created_at", -1).to_list(200)
+    docs = await db.photos.find({}).sort([("sort_order", 1), ("created_at", -1)]).to_list(200)
     return [clean(d) for d in docs]
 
 

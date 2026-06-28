@@ -46,6 +46,7 @@ export default function Gallery() {
   const [selectedBase64, setSelectedBase64] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [reorderingId, setReorderingId] = useState<number | null>(null);
 
   useEffect(() => {
     if (!loading && !user) router.replace("/admin");
@@ -90,6 +91,17 @@ export default function Gallery() {
       Alert.alert("Upload failed", e.message || "Could not upload photo.");
     }
     setUploading(false);
+  };
+
+  const movePhoto = async (id: number, direction: "up" | "down") => {
+    setReorderingId(id);
+    try {
+      await api.patch(`/photos/${id}/order?direction=${direction}`);
+      await load();
+    } catch {
+      Alert.alert("Error", "Could not reorder photo.");
+    }
+    setReorderingId(null);
   };
 
   const handleDelete = (id: number) => {
@@ -214,18 +226,32 @@ export default function Gallery() {
                   />
                   <View style={styles.photoFooter}>
                     <Text style={styles.photoCaption} numberOfLines={2}>{photo.caption}</Text>
-                    <TouchableOpacity
-                      style={styles.deleteBtn}
-                      onPress={() => handleDelete(photo.id)}
-                      disabled={deletingId === photo.id}
-                      activeOpacity={0.7}
-                    >
-                      {deletingId === photo.id ? (
-                        <ActivityIndicator size="small" color={P.error} />
+                    <View style={{ flexDirection: "row", gap: 2, alignItems: "center" }}>
+                      {reorderingId === photo.id ? (
+                        <ActivityIndicator size="small" color={P.copper} />
                       ) : (
-                        <Ionicons name="trash-outline" size={18} color={P.error} />
+                        <>
+                          <TouchableOpacity style={styles.orderBtn} onPress={() => movePhoto(photo.id, "up")} activeOpacity={0.7}>
+                            <Ionicons name="chevron-up-outline" size={16} color={P.copper} />
+                          </TouchableOpacity>
+                          <TouchableOpacity style={styles.orderBtn} onPress={() => movePhoto(photo.id, "down")} activeOpacity={0.7}>
+                            <Ionicons name="chevron-down-outline" size={16} color={P.copper} />
+                          </TouchableOpacity>
+                        </>
                       )}
-                    </TouchableOpacity>
+                      <TouchableOpacity
+                        style={styles.deleteBtn}
+                        onPress={() => handleDelete(photo.id)}
+                        disabled={deletingId === photo.id}
+                        activeOpacity={0.7}
+                      >
+                        {deletingId === photo.id ? (
+                          <ActivityIndicator size="small" color={P.error} />
+                        ) : (
+                          <Ionicons name="trash-outline" size={18} color={P.error} />
+                        )}
+                      </TouchableOpacity>
+                    </View>
                   </View>
                 </View>
               ))}
@@ -301,5 +327,6 @@ const styles = StyleSheet.create({
     padding: 10, gap: 8,
   },
   photoCaption: { flex: 1, fontSize: 12, color: P.muted, lineHeight: 16 },
+  orderBtn: { padding: 4 },
   deleteBtn: { padding: 6 },
 });

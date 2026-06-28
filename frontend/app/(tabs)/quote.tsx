@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View, Text, StyleSheet, ScrollView, Pressable, Linking, KeyboardAvoidingView, Platform, ActivityIndicator,
 } from "react-native";
@@ -12,11 +12,29 @@ import { Eyebrow, Btn, Field, MaxWidth } from "@/src/components/ui";
 import { BIZ, SERVICES } from "@/src/brand";
 import { useResponsive } from "@/src/hooks/use-responsive";
 
+const BACKEND = process.env.EXPO_PUBLIC_BACKEND_URL ?? "";
 const SERVICE_NAMES = SERVICES.map((s) => s.title);
 
 export default function Quote() {
   const insets = useSafeAreaInsets();
   const { isDesktop, hPad } = useResponsive();
+
+  const [bizContact, setBizContact] = useState({ phone: BIZ.phone, mobile: BIZ.mobile, email: BIZ.email, hours: BIZ.hours });
+
+  useEffect(() => {
+    fetch(`${BACKEND}/api/site-settings`)
+      .then(r => r.ok ? r.json() : null)
+      .then(d => {
+        if (!d) return;
+        setBizContact({
+          phone: d.phone || BIZ.phone,
+          mobile: d.mobile || BIZ.mobile,
+          email: d.email || BIZ.email,
+          hours: d.hours || BIZ.hours,
+        });
+      })
+      .catch(() => {});
+  }, []);
 
   const [form, setForm] = useState({ name: "", phone: "", email: "", service: "", message: "" });
   const [sending, setSending] = useState(false);
@@ -30,7 +48,7 @@ export default function Quote() {
   const [estimate, setEstimate] = useState("");
 
   const call = (num: string) => Linking.openURL(`tel:${num.replace(/\s/g, "")}`);
-  const mail = () => Linking.openURL(`mailto:${BIZ.email}`);
+  const mail = () => Linking.openURL(`mailto:${bizContact.email}`);
 
   const submit = async () => {
     setErr("");
@@ -86,21 +104,21 @@ export default function Quote() {
           <MaxWidth>
             {/* Contact quick actions */}
             <View style={[styles.contactRow, isDesktop && { gap: S.lg }]}>
-              <Pressable testID="quote-call" style={styles.contactBtn} onPress={() => call(BIZ.phone)}>
+              <Pressable testID="quote-call" style={styles.contactBtn} onPress={() => call(bizContact.phone)}>
                 <Ionicons name="call" size={20} color={C.brand} />
                 <Text style={styles.contactLabel}>Call</Text>
-                <Text style={styles.contactVal}>{BIZ.phone}</Text>
+                <Text style={styles.contactVal}>{bizContact.phone}</Text>
               </Pressable>
-              <Pressable testID="quote-mobile" style={styles.contactBtn} onPress={() => call(BIZ.mobile)}>
+              <Pressable testID="quote-mobile" style={styles.contactBtn} onPress={() => call(bizContact.mobile)}>
                 <Ionicons name="phone-portrait" size={20} color={C.brand} />
                 <Text style={styles.contactLabel}>Mobile</Text>
-                <Text style={styles.contactVal}>{BIZ.mobile}</Text>
+                <Text style={styles.contactVal}>{bizContact.mobile}</Text>
               </Pressable>
               {isDesktop && (
                 <Pressable testID="quote-email-desktop" style={styles.contactBtn} onPress={mail}>
                   <Ionicons name="mail" size={20} color={C.brand} />
                   <Text style={styles.contactLabel}>Email</Text>
-                  <Text style={styles.contactVal}>{BIZ.email}</Text>
+                  <Text style={styles.contactVal}>{bizContact.email}</Text>
                 </Pressable>
               )}
             </View>
@@ -109,14 +127,14 @@ export default function Quote() {
               <>
                 <Pressable testID="quote-email" style={[styles.emailBtn, { marginTop: S.md }]} onPress={mail}>
                   <Ionicons name="mail" size={18} color={C.ink} />
-                  <Text style={styles.emailText}>{BIZ.email}</Text>
+                  <Text style={styles.emailText}>{bizContact.email}</Text>
                 </Pressable>
               </>
             )}
 
             <View style={styles.hoursRow}>
               <Ionicons name="time" size={15} color={C.muted} />
-              <Text style={styles.hoursText}>{BIZ.hours}  ·  Free site survey</Text>
+              <Text style={styles.hoursText}>{bizContact.hours}  ·  Free site survey</Text>
             </View>
 
             {/* Desktop: 2-col layout for AI + Form */}
@@ -162,7 +180,7 @@ export default function Quote() {
                     <Ionicons name="checkmark-circle" size={48} color={C.success} />
                     <Text style={styles.successTitle}>Thanks, {form.name.split(" ")[0]}!</Text>
                     <Text style={styles.successText}>Your enquiry has been received. We'll be in touch very soon to arrange your free site survey.</Text>
-                    <Btn testID="enquiry-call-now" label={`Call now: ${BIZ.mobile}`} icon="call" variant="dark" onPress={() => call(BIZ.mobile)} style={{ marginTop: S.md }} />
+                    <Btn testID="enquiry-call-now" label={`Call now: ${bizContact.mobile}`} icon="call" variant="dark" onPress={() => call(bizContact.mobile)} style={{ marginTop: S.md }} />
                   </View>
                 ) : (
                   <View style={styles.formCard}>
