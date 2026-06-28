@@ -284,7 +284,7 @@ export default function Quotes() {
   );
 
   return (
-    <View style={styles.root}>
+    <View style={[styles.root, !isDesktop && { flexDirection: "column" }]}>
       <AdminSidebar activeRoute="/admin/quotes" />
       <View style={styles.main}>
         {/* Top bar */}

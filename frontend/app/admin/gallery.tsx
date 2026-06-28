@@ -115,7 +115,7 @@ export default function Gallery() {
   }
 
   return (
-    <View style={styles.root}>
+    <View style={[styles.root, !isDesktop && { flexDirection: "column" }]}>
       <AdminSidebar activeRoute="/admin/gallery" />
 
       <View style={styles.main}>

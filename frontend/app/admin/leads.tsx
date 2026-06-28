@@ -51,6 +51,7 @@ export default function Leads() {
   const { user, loading, logout } = useAuth();
   const router = useRouter();
   const { width } = useWindowDimensions();
+  const isDesktop = width >= 768;
 
   const [enquiries, setEnquiries] = useState<Enquiry[]>([]);
   const [fetching, setFetching] = useState(true);
@@ -101,7 +102,7 @@ export default function Leads() {
   }
 
   return (
-    <View style={styles.root}>
+    <View style={[styles.root, !isDesktop && { flexDirection: "column" }]}>
       <AdminSidebar activeRoute="/admin/leads" />
 
       <View style={styles.main}>

@@ -157,7 +157,7 @@ export default function Testimonials() {
   );
 
   return (
-    <View style={styles.root}>
+    <View style={[styles.root, !isDesktop && { flexDirection: "column" }]}>
       <AdminSidebar activeRoute="/admin/testimonials" />
 
       <View style={styles.main}>

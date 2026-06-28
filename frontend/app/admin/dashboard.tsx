@@ -99,7 +99,7 @@ export default function Dashboard() {
   }
 
   return (
-    <View style={styles.root}>
+    <View style={[styles.root, !isDesktop && { flexDirection: "column" }]}>
       <AdminSidebar activeRoute="/admin/dashboard" />
 
       <View style={styles.main}>
