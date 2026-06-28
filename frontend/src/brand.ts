@@ -49,22 +49,13 @@ export const STEPS = [
   { n: "04", icon: "shield-checkmark", title: "10-Year Guarantee", desc: "Relax — your new surface is built to last and fully guaranteed." },
 ];
 
-// Real T&B Paving project photos
-export const HERO_IMG = require("../assets/images/block-paving.jpg");
-export const ABOUT_IMG = require("../assets/images/sandstone-patio.jpg");
+// Real T&B Paving project photos (high-resolution only)
+export const HERO_IMG = require("../assets/images/hero-excavator.webp");
+export const ABOUT_IMG = require("../assets/images/patio-garden.jpg");
 
-export const GALLERY = [
-  { img: require("../assets/images/block-paving.jpg"),      label: "Block Paving Driveway",       town: "Manchester" },
-  { img: require("../assets/images/resin-driveway.jpg"),    label: "Resin Bound Driveway",         town: "Bolton" },
-  { img: require("../assets/images/gravel-driveway.jpg"),   label: "Gravel Driveway",              town: "Chorley" },
-  { img: require("../assets/images/sandstone-patio.jpg"),   label: "Indian Sandstone Patio",       town: "Stockport" },
-  { img: require("../assets/images/patio-garden.jpg"),      label: "Patio & Garden Design",        town: "Salford" },
-  { img: require("../assets/images/circular-patio.jpg"),    label: "Circular Feature Patio",       town: "Cheshire" },
-  { img: require("../assets/images/sandstone-cleaning.jpg"),label: "Patio Cleaning & Sealing",     town: "Bury" },
-  { img: require("../assets/images/garden-steps-1.jpg"),    label: "Garden Steps & Lawn",          town: "Altrincham" },
-  { img: require("../assets/images/garden-steps-2.jpg"),    label: "Garden Paths & Steps",         town: "Sale" },
-  { img: require("../assets/images/lawn-turf.jpg"),         label: "Lawn & Turf Laying",           town: "Urmston" },
-  { img: require("../assets/images/garden-patio-path.jpg"), label: "Garden Landscaping",           town: "Trafford" },
+export const GALLERY: { img: any; label: string; town: string }[] = [
+  { img: require("../assets/images/hero-excavator.webp"), label: "Professional Groundworks",   town: "North West" },
+  { img: require("../assets/images/patio-garden.jpg"),    label: "Patio & Garden Design",      town: "Salford" },
 ];
 
 export const TESTIMONIALS = [

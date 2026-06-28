@@ -22,14 +22,9 @@ const SLIDES = [
     sub: "From first call to finished driveway — straightforward, transparent and stress-free.",
   },
   {
-    img: require("../../assets/images/block-paving.jpg"),
-    headline: "Stunning Block Paved\nDriveways",
-    sub: "Durable, stylish driveways in countless colours and patterns. Built to last.",
-  },
-  {
-    img: require("../../assets/images/sandstone-patio.jpg"),
+    img: require("../../assets/images/patio-garden.jpg"),
     headline: "Beautiful Patios &\nGarden Spaces",
-    sub: "Natural stone, porcelain & Indian sandstone. Crafted to impress.",
+    sub: "Natural stone, porcelain & Indian sandstone patios. Crafted to impress.",
   },
 ];
 
@@ -264,27 +259,22 @@ export default function Home() {
         <MaxWidth>
           <Eyebrow>Our Work</Eyebrow>
           <SectionTitle>Recent Projects</SectionTitle>
-          <View style={[
-            { marginTop: S.lg },
-            isDesktop
-              ? { flexDirection: "row", flexWrap: "wrap", gap: S.md }
-              : { flexDirection: "row", flexWrap: "wrap", gap: S.md },
-          ]}>
-            {GALLERY.slice(0, isDesktop ? 8 : 4).map((g, i) => (
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: S.md, marginTop: S.lg }}>
+            {GALLERY.map((g, i) => (
               <Tilt3D
                 key={i}
                 testID={`home-gallery-${i}`}
                 onPress={() => router.push("/(tabs)/gallery" as any)}
                 style={[
                   styles.galleryCard,
-                  isDesktop && { width: "23%" },
+                  isDesktop && { width: "31.5%" },
                   !isDesktop && { width: "47%" },
                 ]}
                 max={10}
               >
                 <Image
                   source={g.img}
-                  style={[styles.galleryImg, { height: isDesktop ? 180 : 120 }]}
+                  style={[styles.galleryImg, { height: isDesktop ? 200 : 140 }]}
                   contentFit="cover"
                   transition={200}
                 />
@@ -294,6 +284,18 @@ export default function Home() {
                 </View>
               </Tilt3D>
             ))}
+            {/* More coming soon card */}
+            <Pressable
+              onPress={() => router.push("/(tabs)/gallery" as any)}
+              style={[
+                styles.galleryCard, styles.galleryComingSoon,
+                isDesktop && { width: "31.5%", height: isDesktop ? 200 + 46 : 140 + 46 },
+                !isDesktop && { width: "47%", height: 140 + 46 },
+              ]}
+            >
+              <Ionicons name="images-outline" size={28} color={C.muted} />
+              <Text style={styles.galleryComingTitle}>More Photos{"\n"}Coming Soon</Text>
+            </Pressable>
           </View>
           <Btn
             testID="home-gallery-all"
@@ -563,6 +565,11 @@ const styles = StyleSheet.create({
   galleryImg: { width: "100%", backgroundColor: C.surfaceAlt },
   galleryLabel: { fontSize: 13, fontWeight: "800", color: C.ink },
   galleryTown: { fontSize: 11, color: C.muted, marginTop: 1 },
+  galleryComingSoon: {
+    alignItems: "center", justifyContent: "center", gap: S.sm,
+    borderStyle: "dashed",
+  },
+  galleryComingTitle: { fontSize: 13, fontWeight: "700", color: C.muted, textAlign: "center", lineHeight: 19 },
   quoteCard: {
     backgroundColor: C.surface, borderRadius: R.xl,
     padding: S.lg, borderWidth: 1, borderColor: C.border, ...SHADOW.card,

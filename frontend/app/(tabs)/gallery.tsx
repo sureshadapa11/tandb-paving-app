@@ -28,7 +28,7 @@ export default function Gallery() {
       </View>
       <FlatList
         key={numCols}
-        data={GALLERY}
+        data={[...GALLERY, { img: null, label: "coming-soon", town: "" }]}
         keyExtractor={(_, i) => String(i)}
         numColumns={numCols}
         removeClippedSubviews
@@ -37,15 +37,26 @@ export default function Gallery() {
         windowSize={5}
         columnWrapperStyle={numCols > 1 ? { gap: S.md } : undefined}
         contentContainerStyle={{ paddingTop: S.md, paddingBottom: S["3xl"], gap: S.md, paddingHorizontal: hPad, alignSelf: "center", width: "100%", maxWidth: 1200 }}
-        renderItem={({ item, index }) => (
-          <Tilt3D testID={`gallery-item-${index}`} style={[styles.card, { flex: 1 }]} onPress={() => setActive(index)} max={10}>
-            <Image source={item.img} style={[styles.img, { height: imgH }]} contentFit="cover" transition={200} />
-            <View style={styles.caption}>
-              <Text style={styles.label} numberOfLines={1}>{item.label}</Text>
-              <Text style={styles.town}>{item.town}</Text>
-            </View>
-          </Tilt3D>
-        )}
+        renderItem={({ item, index }) => {
+          if (item.label === "coming-soon") {
+            return (
+              <View style={[styles.card, styles.comingSoon, { flex: 1, height: imgH + 46 }]}>
+                <Ionicons name="camera-outline" size={32} color={C.muted} />
+                <Text style={styles.comingSoonTitle}>More Photos Coming Soon</Text>
+                <Text style={styles.comingSoonSub}>New project photos added regularly</Text>
+              </View>
+            );
+          }
+          return (
+            <Tilt3D testID={`gallery-item-${index}`} style={[styles.card, { flex: 1 }]} onPress={() => setActive(index)} max={10}>
+              <Image source={item.img} style={[styles.img, { height: imgH }]} contentFit="cover" transition={200} />
+              <View style={styles.caption}>
+                <Text style={styles.label} numberOfLines={1}>{item.label}</Text>
+                <Text style={styles.town}>{item.town}</Text>
+              </View>
+            </Tilt3D>
+          );
+        }}
       />
 
       <Modal visible={active !== null} transparent animationType="fade" onRequestClose={() => setActive(null)}>
@@ -79,4 +90,10 @@ const styles = StyleSheet.create({
   viewerClose: { position: "absolute", right: S.lg, width: 44, height: 44, alignItems: "center", justifyContent: "center", zIndex: 2 },
   viewerLabel: { color: "#fff", fontSize: 17, fontWeight: "800", marginTop: S.lg },
   viewerTown: { color: "rgba(255,255,255,0.7)", fontSize: 13, marginTop: 4 },
+  comingSoon: {
+    alignItems: "center", justifyContent: "center", gap: S.sm,
+    borderStyle: "dashed",
+  },
+  comingSoonTitle: { fontSize: 14, fontWeight: "700", color: C.inkSoft, textAlign: "center" },
+  comingSoonSub: { fontSize: 12, color: C.muted, textAlign: "center" },
 });
