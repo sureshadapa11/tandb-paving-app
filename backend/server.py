@@ -456,6 +456,20 @@ async def delete_photo(pid: str, user=Depends(get_current_user)):
 
 
 # ---------- Testimonials ----------
+@api_router.get("/public/testimonials")
+async def public_testimonials():
+    """Public — returns all approved testimonials."""
+    docs = await db.testimonials.find({"status": "approved"}).sort("created_at", -1).to_list(100)
+    return [clean(d) for d in docs]
+
+
+@api_router.get("/public/gallery")
+async def public_gallery():
+    """Public — returns all uploaded gallery photos."""
+    docs = await db.photos.find({}).sort("created_at", -1).to_list(200)
+    return [clean(d) for d in docs]
+
+
 @api_router.post("/reviews/submit")
 async def submit_review(body: ReviewSubmitBody):
     """Public endpoint — no auth. Saves as pending for admin approval."""

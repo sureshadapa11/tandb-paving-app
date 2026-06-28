@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { View, Text, StyleSheet, ScrollView, Pressable } from "react-native";
+import React, { useState, useEffect } from "react";
+import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -8,11 +8,35 @@ import { Eyebrow, Stars, Btn, MaxWidth } from "@/src/components/ui";
 import { TESTIMONIALS, REVIEW_PLATFORMS, AREAS, FAQS, BIZ } from "@/src/brand";
 import { useResponsive } from "@/src/hooks/use-responsive";
 
+const BACKEND = process.env.EXPO_PUBLIC_BACKEND_URL ?? "";
+
+type Testimonial = { id: string; name: string; town: string; job: string; stars: number; text: string };
+
 export default function Reviews() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const [open, setOpen] = useState<number | null>(0);
   const { isDesktop, isTablet, hPad } = useResponsive();
+
+  const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
+  const [loadingT, setLoadingT] = useState(true);
+  const [settings, setSettings] = useState<any>(null);
+
+  useEffect(() => {
+    Promise.all([
+      fetch(`${BACKEND}/api/public/testimonials`).then(r => r.ok ? r.json() : []).catch(() => []),
+      fetch(`${BACKEND}/api/site-settings`).then(r => r.ok ? r.json() : null).catch(() => null),
+    ]).then(([t, s]) => {
+      setTestimonials(t);
+      setSettings(s);
+      setLoadingT(false);
+    });
+  }, []);
+
+  const displayTestimonials = testimonials.length > 0 ? testimonials : TESTIMONIALS;
+  const faqs = settings?.faqs?.length ? settings.faqs : FAQS;
+  const areas = settings?.areas?.length ? settings.areas : AREAS;
+  const coverageArea = settings?.area || BIZ.area;
 
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
@@ -22,29 +46,63 @@ export default function Reviews() {
           <Text style={[styles.title, isDesktop && { fontSize: 38 }]}>What Our Customers Say</Text>
         </MaxWidth>
       </View>
+
       <ScrollView contentContainerStyle={{ paddingBottom: S["3xl"] }} showsVerticalScrollIndicator={false}>
 
         {/* Testimonials */}
         <View style={{ paddingHorizontal: hPad, paddingVertical: S.lg }}>
           <MaxWidth>
-            <View style={isDesktop || isTablet
-              ? { flexDirection: "row", gap: S.md }
-              : { gap: S.md }
-            }>
-              {TESTIMONIALS.map((t, i) => (
-                <View key={i} testID={`testimonial-${i}`} style={[styles.tCard, (isDesktop || isTablet) && { flex: 1 }]}>
-                  <Stars n={t.stars} size={16} />
-                  <Text style={styles.tText}>"{t.text}"</Text>
-                  <View style={styles.tFooter}>
-                    <View style={styles.avatar}><Text style={styles.avatarText}>{t.name[0]}</Text></View>
-                    <View>
-                      <Text style={styles.tName}>{t.name}</Text>
-                      <Text style={styles.tJob}>{t.job} · {t.town}</Text>
+            {loadingT ? (
+              <ActivityIndicator size="large" color={C.brand} style={{ marginVertical: S.xl }} />
+            ) : (
+              <View style={[
+                (isDesktop || isTablet) ? { flexDirection: "row", flexWrap: "wrap", gap: S.md } : { gap: S.md }
+              ]}>
+                {displayTestimonials.map((t, i) => (
+                  <View
+                    key={(t as any).id || i}
+                    testID={`testimonial-${i}`}
+                    style={[styles.tCard, (isDesktop || isTablet) && { flex: 1, minWidth: "30%" }]}
+                  >
+                    <Stars n={t.stars} size={16} />
+                    <Text style={styles.tText}>"{t.text}"</Text>
+                    <View style={styles.tFooter}>
+                      <View style={styles.avatar}>
+                        <Text style={styles.avatarText}>{t.name[0]}</Text>
+                      </View>
+                      <View>
+                        <Text style={styles.tName}>{t.name}</Text>
+                        <Text style={styles.tJob}>{[t.job, t.town].filter(Boolean).join(" · ")}</Text>
+                      </View>
                     </View>
                   </View>
-                </View>
-              ))}
-            </View>
+                ))}
+              </View>
+            )}
+
+            {/* Live badge when showing DB reviews */}
+            {testimonials.length > 0 && (
+              <View style={styles.liveBadge}>
+                <View style={styles.liveDot} />
+                <Text style={styles.liveText}>{testimonials.length} verified review{testimonials.length !== 1 ? "s" : ""}</Text>
+              </View>
+            )}
+          </MaxWidth>
+        </View>
+
+        {/* Leave a review CTA */}
+        <View style={{ paddingHorizontal: hPad, paddingBottom: S.lg }}>
+          <MaxWidth>
+            <Pressable style={styles.reviewCta} onPress={() => router.push("/review" as any)}>
+              <View style={styles.reviewCtaLeft}>
+                {[1,2,3,4,5].map(n => <Ionicons key={n} name="star" size={16} color="#E0A732" />)}
+                <Text style={styles.reviewCtaTitle}>Happy with our work?</Text>
+                <Text style={styles.reviewCtaSub}>Share your experience — it takes less than a minute.</Text>
+              </View>
+              <View style={styles.reviewCtaArrow}>
+                <Ionicons name="arrow-forward" size={20} color="#FFFFFF" />
+              </View>
+            </Pressable>
           </MaxWidth>
         </View>
 
@@ -69,9 +127,9 @@ export default function Reviews() {
             <View style={styles.coverage}>
               <Eyebrow>Coverage</Eyebrow>
               <Text style={[styles.coverageTitle, isDesktop && { fontSize: 30 }]}>Areas We Cover</Text>
-              <Text style={styles.coverageSub}>Proudly serving {BIZ.area}, including:</Text>
+              <Text style={styles.coverageSub}>Proudly serving {coverageArea}, including:</Text>
               <View style={[styles.areaWrap, isDesktop && { gap: S.sm }]}>
-                {AREAS.map((a) => (
+                {areas.map((a: string) => (
                   <View key={a} style={styles.areaChip}><Text style={styles.areaText}>{a}</Text></View>
                 ))}
               </View>
@@ -88,7 +146,7 @@ export default function Reviews() {
               { marginTop: S.lg },
               isDesktop ? { flexDirection: "row", flexWrap: "wrap", gap: S.md } : { gap: S.sm }
             ]}>
-              {FAQS.map((f, i) => (
+              {faqs.map((f: any, i: number) => (
                 <Pressable
                   key={i}
                   testID={`faq-${i}`}
@@ -127,6 +185,24 @@ const styles = StyleSheet.create({
   avatarText: { color: C.onBrand, fontWeight: "900", fontSize: 16 },
   tName: { fontSize: 14, fontWeight: "800", color: C.ink },
   tJob: { fontSize: 12, color: C.muted },
+  liveBadge: {
+    flexDirection: "row", alignItems: "center", gap: 6,
+    marginTop: S.lg, alignSelf: "flex-start",
+  },
+  liveDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: C.success },
+  liveText: { fontSize: 12, fontWeight: "700", color: C.success },
+  reviewCta: {
+    flexDirection: "row", alignItems: "center",
+    backgroundColor: "#1A2A3A", borderRadius: R.xl, padding: S.lg,
+    borderWidth: 1, borderColor: "rgba(181,101,29,0.4)",
+  },
+  reviewCtaLeft: { flex: 1, gap: 4 },
+  reviewCtaTitle: { fontSize: 17, fontWeight: "800", color: "#FFFFFF", marginTop: 2 },
+  reviewCtaSub: { fontSize: 13, color: "rgba(255,255,255,0.65)" },
+  reviewCtaArrow: {
+    width: 40, height: 40, borderRadius: 20,
+    backgroundColor: "#B5651D", alignItems: "center", justifyContent: "center", marginLeft: S.md,
+  },
   smallTitle: { fontSize: 12, fontWeight: "800", letterSpacing: 1.5, color: C.muted, textAlign: "center", marginBottom: S.md },
   platforms: { flexDirection: "row", flexWrap: "wrap", gap: S.sm, justifyContent: "center" },
   platform: { flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: C.surface, borderWidth: 1, borderColor: C.border, paddingHorizontal: S.md, paddingVertical: 8, borderRadius: R.pill },
