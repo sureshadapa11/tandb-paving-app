@@ -36,18 +36,17 @@ export default function ChatBubble() {
     }).start();
   }, [open]);
 
-  // Close on click outside (web only)
+  // Close on click outside — inject a real DOM overlay behind the panel (web only)
   useEffect(() => {
     if (!open || Platform.OS !== "web") return;
     const doc = (globalThis as any).document;
     if (!doc) return;
-    const close = (e: MouseEvent) => {
-      // If the click is inside the chat widget, do nothing
-      if ((e.target as Element)?.closest?.("[data-chat-widget]")) return;
-      setOpen(false);
-    };
-    const t = setTimeout(() => doc.addEventListener("click", close), 50);
-    return () => { clearTimeout(t); doc.removeEventListener("click", close); };
+    const overlay = doc.createElement("div");
+    overlay.style.cssText =
+      "position:fixed;top:0;left:0;width:100%;height:100%;z-index:998;background:transparent;";
+    overlay.addEventListener("click", () => setOpen(false));
+    doc.body.appendChild(overlay);
+    return () => { doc.body.removeChild(overlay); };
   }, [open]);
 
   useEffect(() => {
@@ -99,7 +98,7 @@ export default function ChatBubble() {
   const hasSuggestions = messages.length <= 1;
 
   return (
-    <View style={styles.container} pointerEvents="box-none" {...(Platform.OS === "web" ? { "data-chat-widget": "true" } as any : {})}>
+    <View style={styles.container} pointerEvents="box-none">
       {/* Chat panel */}
       {open && (
         <Animated.View
