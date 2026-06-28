@@ -41,8 +41,11 @@ export default function ChatBubble() {
     if (!open || Platform.OS !== "web") return;
     const doc = (globalThis as any).document;
     if (!doc) return;
-    const close = () => setOpen(false);
-    // Small delay so the click that opened the chat doesn't immediately close it
+    const close = (e: MouseEvent) => {
+      // If the click is inside the chat widget, do nothing
+      if ((e.target as Element)?.closest?.("[data-chat-widget]")) return;
+      setOpen(false);
+    };
     const t = setTimeout(() => doc.addEventListener("click", close), 50);
     return () => { clearTimeout(t); doc.removeEventListener("click", close); };
   }, [open]);
@@ -96,7 +99,7 @@ export default function ChatBubble() {
   const hasSuggestions = messages.length <= 1;
 
   return (
-    <View style={styles.container} pointerEvents="box-none">
+    <View style={styles.container} pointerEvents="box-none" {...(Platform.OS === "web" ? { "data-chat-widget": "true" } as any : {})}>
       {/* Chat panel */}
       {open && (
         <Animated.View
@@ -104,7 +107,6 @@ export default function ChatBubble() {
             styles.panel,
             { transform: [{ translateY: panelTranslate }], opacity: panelOpacity },
           ]}
-          {...(Platform.OS === "web" ? { onClick: (e: any) => e.stopPropagation() } as any : {})}
         >
           {/* Panel header */}
           <View style={styles.panelHeader}>
@@ -186,7 +188,6 @@ export default function ChatBubble() {
         style={[styles.fab, open && styles.fabOpen]}
         onPress={() => setOpen(o => !o)}
         activeOpacity={0.85}
-        {...(Platform.OS === "web" ? { onClick: (e: any) => e.stopPropagation() } as any : {})}
       >
         <Ionicons name={open ? "close" : "chatbubble-ellipses"} size={24} color="#fff" />
         {!open && (
