@@ -405,13 +405,22 @@ export default function Home() {
               ))}
             </View>
           </View>
-          <Btn
-            testID="home-reviews-all"
-            label="Read More Reviews"
-            variant="outline"
-            onPress={() => router.push("/(tabs)/reviews" as any)}
-            style={{ marginTop: S.lg, alignSelf: isDesktop ? "flex-start" : undefined }}
-          />
+          <View style={{ flexDirection: isDesktop ? "row" : "column", gap: 12, marginTop: S.lg }}>
+            <Btn
+              testID="home-reviews-all"
+              label="Read More Reviews"
+              variant="outline"
+              onPress={() => router.push("/(tabs)/reviews" as any)}
+              style={{ alignSelf: isDesktop ? "flex-start" : undefined }}
+            />
+            <Btn
+              testID="home-reviews-leave"
+              label="⭐  Leave Us a Review"
+              variant="primary"
+              onPress={() => router.push("/review" as any)}
+              style={{ alignSelf: isDesktop ? "flex-start" : undefined }}
+            />
+          </View>
         </MaxWidth>
       </View>
 

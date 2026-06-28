@@ -164,6 +164,14 @@ class TestimonialBody(BaseModel):
     text: str
 
 
+class ReviewSubmitBody(BaseModel):
+    name: str
+    town: str = ""
+    job: str = ""
+    stars: int = 5
+    text: str
+
+
 class ChatBody(BaseModel):
     session_id: str
     message: str
@@ -424,23 +432,46 @@ async def delete_photo(pid: str, user=Depends(get_current_user)):
 
 
 # ---------- Testimonials ----------
+@api_router.post("/reviews/submit")
+async def submit_review(body: ReviewSubmitBody):
+    """Public endpoint — no auth. Saves as pending for admin approval."""
+    doc = body.dict()
+    doc.update({"id": oid(), "status": "pending", "created_at": now_iso()})
+    await db.testimonials.insert_one(doc)
+    return {"ok": True}
+
+
 @api_router.post("/testimonials")
 async def create_testimonial(body: TestimonialBody, user=Depends(get_current_user)):
     doc = body.dict()
-    doc.update({"id": oid(), "owner_id": user["id"], "created_at": now_iso()})
+    doc.update({"id": oid(), "owner_id": user["id"], "status": "approved", "created_at": now_iso()})
     await db.testimonials.insert_one(doc)
     return clean(doc)
 
 
 @api_router.get("/testimonials")
-async def list_testimonials(user=Depends(get_current_user)):
-    docs = await db.testimonials.find({"owner_id": user["id"]}).sort("created_at", -1).to_list(200)
+async def list_testimonials(status: str = "all", user=Depends(get_current_user)):
+    query: dict = {}
+    if status == "pending":
+        query["status"] = "pending"
+    elif status == "approved":
+        query["$or"] = [{"status": "approved"}, {"owner_id": user["id"]}]
+    docs = await db.testimonials.find(query).sort("created_at", -1).to_list(500)
     return [clean(d) for d in docs]
+
+
+@api_router.put("/testimonials/{tid}/approve")
+async def approve_testimonial(tid: str, user=Depends(get_current_user)):
+    await db.testimonials.update_one(
+        {"id": tid},
+        {"$set": {"status": "approved", "owner_id": user["id"]}}
+    )
+    return {"ok": True}
 
 
 @api_router.delete("/testimonials/{tid}")
 async def delete_testimonial(tid: str, user=Depends(get_current_user)):
-    await db.testimonials.delete_one({"id": tid, "owner_id": user["id"]})
+    await db.testimonials.delete_one({"id": tid})
     return {"ok": True}
 
 
