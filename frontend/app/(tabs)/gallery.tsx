@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { View, Text, StyleSheet, FlatList, Pressable, Modal, useWindowDimensions, ActivityIndicator } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Head } from "expo-router/head";
 import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 import { C, S, R } from "@/src/theme";
@@ -44,6 +45,12 @@ export default function Gallery() {
 
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
+      <Head>
+        <title>Project Gallery | T&B Paving — Driveways & Patios Essex</title>
+        <meta name="description" content="Browse our gallery of completed driveways, patios and garden paths across Essex & Suffolk. Block paving, resin, natural stone and more." />
+        <meta property="og:title" content="Project Gallery | T&B Paving" />
+        <meta property="og:description" content="See our completed paving projects across Essex & Suffolk — driveways, patios, paths and more." />
+      </Head>
       <View style={[styles.headerOuter, { paddingTop: insets.top + S.md }]}>
         <MaxWidth style={{ paddingHorizontal: hPad }}>
           <Eyebrow>Our Work</Eyebrow>

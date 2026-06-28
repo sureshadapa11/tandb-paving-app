@@ -5,6 +5,7 @@ import {
 } from "react-native";
 import QRCode from "react-qr-code";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { Head } from "expo-router/head";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
@@ -193,6 +194,12 @@ export default function Home() {
 
   return (
     <>
+    <Head>
+      <title>T&B Paving — Expert Driveways, Patios & Paths | Essex & Suffolk</title>
+      <meta name="description" content="T&B Paving: trusted driveways, patios and paths across Essex & Suffolk since 2009. Free site survey, honest pricing, 10-year guarantee. Call 01376 618683." />
+      <meta property="og:title" content="T&B Paving — Expert Driveways, Patios & Paths" />
+      <meta property="og:description" content="Trusted paving contractor across Essex & Suffolk since 2009. Free site survey, 10-year guarantee." />
+    </Head>
     <ScrollView
       ref={scrollRef}
       showsVerticalScrollIndicator={false}

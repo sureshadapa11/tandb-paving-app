@@ -3,6 +3,7 @@ import {
   View, Text, StyleSheet, ScrollView, Pressable, Linking, KeyboardAvoidingView, Platform, ActivityIndicator,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Head } from "expo-router/head";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { api } from "@/src/api";
@@ -63,6 +64,12 @@ export default function Quote() {
 
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
+      <Head>
+        <title>Get a Free Quote | T&B Paving — Essex & Suffolk</title>
+        <meta name="description" content="Request a free, no-obligation quote from T&B Paving. Driveways, patios, paths and more across Essex & Suffolk. Fast response, honest pricing." />
+        <meta property="og:title" content="Get a Free Quote | T&B Paving" />
+        <meta property="og:description" content="Free no-obligation quote for driveways, patios and paths across Essex & Suffolk." />
+      </Head>
       <View style={[styles.headerOuter, { paddingTop: insets.top + S.md }]}>
         <MaxWidth style={{ paddingHorizontal: hPad }}>
           <Eyebrow>Get In Touch</Eyebrow>

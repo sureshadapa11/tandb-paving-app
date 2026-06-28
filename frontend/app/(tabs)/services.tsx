@@ -1,7 +1,8 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet, FlatList, Pressable } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
+import { Head } from "expo-router/head";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { Image } from "expo-image";
@@ -11,14 +12,37 @@ import { FlipCard } from "@/src/components/Card3D";
 import { SERVICES } from "@/src/brand";
 import { useResponsive } from "@/src/hooks/use-responsive";
 
+const BACKEND = process.env.EXPO_PUBLIC_BACKEND_URL ?? "";
+
 export default function Services() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { isDesktop, isTablet, numCols, hPad } = useResponsive();
   const CARD_H = isDesktop ? 220 : isTablet ? 200 : 180;
 
+  const [settings, setSettings] = useState<any>(null);
+  useEffect(() => {
+    fetch(`${BACKEND}/api/site-settings`)
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d) setSettings(d); })
+      .catch(() => {});
+  }, []);
+
+  const services = SERVICES.map((s, i) => ({
+    ...s,
+    title: settings?.services?.[i]?.title || s.title,
+    desc: settings?.services?.[i]?.desc || s.desc,
+  }));
+
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
+      <Head>
+        <title>Our Paving Services | T&B Paving — Essex & Suffolk</title>
+        <meta name="description" content="Block paving, resin driveways, patios, tarmac, concrete, gravel and more. Expert installation across Essex & Suffolk with a 10-year guarantee." />
+        <meta property="og:title" content="Our Paving Services | T&B Paving" />
+        <meta property="og:description" content="11 specialist paving services across Essex & Suffolk. Free site survey. 10-year guarantee." />
+      </Head>
+
       <View style={[styles.headerOuter, { paddingTop: insets.top + S.md }]}>
         <MaxWidth style={{ paddingHorizontal: hPad }}>
           <Eyebrow>What We Offer</Eyebrow>
@@ -28,7 +52,7 @@ export default function Services() {
       </View>
       <FlatList
         key={numCols}
-        data={SERVICES}
+        data={services}
         keyExtractor={(i) => i.id}
         numColumns={numCols}
         removeClippedSubviews

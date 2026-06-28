@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
+import { Head } from "expo-router/head";
 import { Ionicons } from "@expo/vector-icons";
 import { C, S, R, SHADOW } from "@/src/theme";
 import { Eyebrow, Stars, Btn, MaxWidth } from "@/src/components/ui";
@@ -40,6 +41,12 @@ export default function Reviews() {
 
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
+      <Head>
+        <title>Customer Reviews | T&B Paving — Essex & Suffolk</title>
+        <meta name="description" content="Read genuine reviews from T&B Paving customers across Essex & Suffolk. 5-star rated block paving, resin driveways and patios." />
+        <meta property="og:title" content="Customer Reviews | T&B Paving" />
+        <meta property="og:description" content="5-star rated paving contractor. Read verified reviews from homeowners across Essex & Suffolk." />
+      </Head>
       <View style={[styles.headerOuter, { paddingTop: insets.top + S.md }]}>
         <MaxWidth style={{ paddingHorizontal: hPad }}>
           <Eyebrow>Testimonials</Eyebrow>
