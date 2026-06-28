@@ -182,10 +182,8 @@ export default function Home() {
           <Eyebrow>What We Offer</Eyebrow>
           <SectionTitle>Our Paving Services</SectionTitle>
           <View style={[
-            { marginTop: S.lg },
-            isDesktop
-              ? { flexDirection: "row", flexWrap: "wrap", gap: S.md }
-              : { gap: S.md },
+            { marginTop: S.lg, flexDirection: "row", flexWrap: "wrap" },
+            isDesktop ? { gap: S.md } : { gap: S.sm },
           ]}>
             {SERVICES.slice(0, isDesktop ? 6 : 4).map((sv) => (
               <Tilt3D
@@ -194,19 +192,27 @@ export default function Home() {
                 style={[
                   styles.svCard,
                   isDesktop && { width: "31.5%" },
-                  isTablet && !isDesktop && { width: "48%" },
+                  (isTablet && !isDesktop) && { width: "48%" },
+                  !isTablet && !isDesktop && { width: "100%" },
                 ]}
                 onPress={() => router.push("/(tabs)/services" as any)}
                 max={8}
               >
-                <View style={styles.svIcon}>
-                  <Ionicons name={sv.icon as any} size={22} color={C.brand} />
-                </View>
-                <View style={{ flex: 1 }}>
+                <Image source={sv.bgImg} style={StyleSheet.absoluteFill} contentFit="cover" />
+                <LinearGradient
+                  colors={["rgba(15,10,5,0.28)", "rgba(15,10,5,0.82)"]}
+                  style={StyleSheet.absoluteFill}
+                />
+                <View style={styles.svContent}>
+                  <View style={styles.svIcon}>
+                    <Ionicons name={sv.icon as any} size={20} color={C.accent} />
+                  </View>
                   <Text style={styles.svTitle}>{sv.title}</Text>
                   <Text style={styles.svDesc} numberOfLines={2}>{sv.desc}</Text>
                 </View>
-                <Ionicons name="chevron-forward" size={18} color={C.muted} />
+                <View style={styles.svChevron}>
+                  <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.7)" />
+                </View>
               </Tilt3D>
             ))}
           </View>
@@ -537,16 +543,25 @@ const styles = StyleSheet.create({
   },
   trustText: { fontSize: 12, fontWeight: "700", color: C.ink },
   svCard: {
-    flexDirection: "row", alignItems: "center", gap: S.md,
-    backgroundColor: C.surface, borderRadius: R.lg,
-    padding: S.md, borderWidth: 1, borderColor: C.border, ...SHADOW.card,
+    borderRadius: R.lg, overflow: "hidden",
+    height: 160, justifyContent: "flex-end",
+    ...SHADOW.card,
   },
+  svContent: { padding: S.md, flex: 1, justifyContent: "flex-end" },
   svIcon: {
-    width: 46, height: 46, borderRadius: R.md,
-    backgroundColor: C.accentSoft, alignItems: "center", justifyContent: "center",
+    width: 36, height: 36, borderRadius: R.sm,
+    backgroundColor: "rgba(255,255,255,0.18)",
+    alignItems: "center", justifyContent: "center",
+    marginBottom: S.sm,
   },
-  svTitle: { fontSize: 15, fontWeight: "800", color: C.ink },
-  svDesc: { fontSize: 12.5, color: C.muted, marginTop: 2, lineHeight: 17 },
+  svTitle: { fontSize: 15, fontWeight: "800", color: "#fff" },
+  svDesc: { fontSize: 12, color: "rgba(255,255,255,0.82)", marginTop: 3, lineHeight: 17 },
+  svChevron: {
+    position: "absolute", right: S.md, top: "50%",
+    width: 28, height: 28, borderRadius: 14,
+    backgroundColor: "rgba(255,255,255,0.18)",
+    alignItems: "center", justifyContent: "center",
+  },
   lightBand: { backgroundColor: C.surfaceAlt },
   step: { flexDirection: "row", gap: S.md, alignItems: "flex-start" },
   stepNum: {

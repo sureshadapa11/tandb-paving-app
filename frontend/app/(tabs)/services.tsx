@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
+import { Image } from "expo-image";
 import { C, S, R, SHADOW } from "@/src/theme";
 import { Eyebrow, Btn, MaxWidth } from "@/src/components/ui";
 import { FlipCard } from "@/src/components/Card3D";
@@ -43,10 +44,12 @@ export default function Services() {
               testID={`flip-${item.id}`}
               front={
                 <View style={[styles.face, styles.front]}>
-                  <View style={styles.iconBox}><Ionicons name={item.icon as any} size={26} color={C.brand} /></View>
+                  <Image source={item.bgImg} style={StyleSheet.absoluteFill} contentFit="cover" />
+                  <LinearGradient colors={["rgba(10,7,4,0.25)", "rgba(10,7,4,0.78)"]} style={StyleSheet.absoluteFill} />
+                  <View style={styles.iconBox}><Ionicons name={item.icon as any} size={24} color={C.accent} /></View>
                   <Text style={styles.frontTitle}>{item.title}</Text>
                   <View style={styles.flipHint}>
-                    <Ionicons name="sync" size={12} color={C.muted} />
+                    <Ionicons name="sync" size={12} color="rgba(255,255,255,0.6)" />
                     <Text style={styles.flipHintText}>TAP FOR DETAILS</Text>
                   </View>
                 </View>
@@ -83,11 +86,11 @@ const styles = StyleSheet.create({
   title: { fontSize: 30, fontWeight: "900", color: C.ink, letterSpacing: -0.8 },
   sub: { fontSize: 14, color: C.muted, marginTop: 6, lineHeight: 20, maxWidth: 600 },
   face: { flex: 1, borderRadius: R.lg, ...SHADOW.card },
-  front: { backgroundColor: C.surface, borderWidth: 1, borderColor: C.border, padding: S.lg, justifyContent: "space-between" },
-  iconBox: { width: 52, height: 52, borderRadius: R.md, backgroundColor: C.accentSoft, alignItems: "center", justifyContent: "center" },
-  frontTitle: { fontSize: 16, fontWeight: "800", color: C.ink, marginTop: S.sm },
+  front: { overflow: "hidden", padding: S.lg, justifyContent: "space-between" },
+  iconBox: { width: 48, height: 48, borderRadius: R.md, backgroundColor: "rgba(255,255,255,0.18)", alignItems: "center", justifyContent: "center" },
+  frontTitle: { fontSize: 16, fontWeight: "800", color: "#fff", marginTop: S.sm },
   flipHint: { flexDirection: "row", alignItems: "center", gap: 4 },
-  flipHintText: { fontSize: 9.5, fontWeight: "800", letterSpacing: 0.8, color: C.muted },
+  flipHintText: { fontSize: 9.5, fontWeight: "800", letterSpacing: 0.8, color: "rgba(255,255,255,0.65)" },
   back: { padding: S.lg, justifyContent: "space-between" },
   backTitle: { fontSize: 16, fontWeight: "900", color: "#fff" },
   backDesc: { fontSize: 13, color: "rgba(255,255,255,0.92)", lineHeight: 19, flex: 1, marginTop: 6 },

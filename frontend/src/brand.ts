@@ -29,17 +29,17 @@ export const TRUST = [
 ];
 
 export const SERVICES = [
-  { id: "block-paving", icon: "grid", title: "Block Paving", desc: "Durable, stylish driveways in countless colours and patterns." },
-  { id: "patios", icon: "square", title: "Patios & Paving", desc: "Natural stone, porcelain & concrete patios built to impress." },
-  { id: "cleaning", icon: "water", title: "Driveway Cleaning & Sealing", desc: "Restore and protect your existing driveway for years to come." },
-  { id: "concrete", icon: "cube", title: "Concrete Driveways", desc: "Hard-wearing, low-maintenance concrete surfaces." },
-  { id: "tarmac", icon: "car-sport", title: "Tarmac Driveways", desc: "Smooth, cost-effective tarmac for drives of any size." },
-  { id: "gravel", icon: "ellipsis-horizontal", title: "Gravel & Shingle", desc: "Decorative, well-drained gravel finishes." },
-  { id: "resin", icon: "color-fill", title: "Resin Bound Surfacing", desc: "Seamless, permeable resin in modern finishes." },
-  { id: "permeable", icon: "rainy", title: "Permeable Paving", desc: "SuDS-compliant, drainage-friendly paving." },
-  { id: "bonded", icon: "apps", title: "Bonded Aggregate", desc: "Textured, slip-resistant decorative surfacing." },
-  { id: "soakaways", icon: "git-network", title: "Soakaways & Drainage", desc: "Proper drainage solutions that genuinely last." },
-  { id: "paths", icon: "walk", title: "Garden Paths", desc: "Beautiful, safe paths around your home and garden." },
+  { id: "block-paving", icon: "grid",               title: "Block Paving",               desc: "Durable, stylish driveways in countless colours and patterns.",           bgImg: require("../assets/images/block-paving.jpg") },
+  { id: "patios",       icon: "square",              title: "Patios & Paving",            desc: "Natural stone, porcelain & concrete patios built to impress.",            bgImg: require("../assets/images/sandstone-patio.jpg") },
+  { id: "cleaning",     icon: "water",               title: "Driveway Cleaning & Sealing",desc: "Restore and protect your existing driveway for years to come.",           bgImg: require("../assets/images/sandstone-cleaning.jpg") },
+  { id: "concrete",     icon: "cube",                title: "Concrete Driveways",         desc: "Hard-wearing, low-maintenance concrete surfaces.",                        bgImg: require("../assets/images/hero-excavator.webp") },
+  { id: "tarmac",       icon: "car-sport",           title: "Tarmac Driveways",           desc: "Smooth, cost-effective tarmac for drives of any size.",                  bgImg: require("../assets/images/patio-garden.jpg") },
+  { id: "gravel",       icon: "ellipsis-horizontal", title: "Gravel & Shingle",           desc: "Decorative, well-drained gravel finishes.",                              bgImg: require("../assets/images/gravel-driveway.jpg") },
+  { id: "resin",        icon: "color-fill",          title: "Resin Bound Surfacing",      desc: "Seamless, permeable resin in modern finishes.",                          bgImg: require("../assets/images/resin-driveway.jpg") },
+  { id: "permeable",    icon: "rainy",               title: "Permeable Paving",           desc: "SuDS-compliant, drainage-friendly paving.",                              bgImg: require("../assets/images/block-paving.jpg") },
+  { id: "bonded",       icon: "apps",                title: "Bonded Aggregate",           desc: "Textured, slip-resistant decorative surfacing.",                         bgImg: require("../assets/images/resin-driveway.jpg") },
+  { id: "soakaways",    icon: "git-network",         title: "Soakaways & Drainage",       desc: "Proper drainage solutions that genuinely last.",                         bgImg: require("../assets/images/hero-excavator.webp") },
+  { id: "paths",        icon: "walk",                title: "Garden Paths",               desc: "Beautiful, safe paths around your home and garden.",                     bgImg: require("../assets/images/garden-steps-1.jpg") },
 ];
 
 export const STEPS = [
