@@ -32,16 +32,11 @@ export default function AdminPanel() {
     );
   }
 
-  const renderPanel = () => {
-    switch (section) {
-      case "dashboard":    return <DashboardPanel />;
-      case "quotes":       return <QuotesPanel />;
-      case "leads":        return <LeadsPanel />;
-      case "testimonials": return <TestimonialsPanel />;
-      case "gallery":      return <GalleryPanel />;
-      case "settings":     return <SettingsPanel />;
-    }
-  };
+  // Track which sections have been visited so we lazy-mount but never unmount
+  const [visited, setVisited] = React.useState<Set<Section>>(new Set(["dashboard"]));
+  React.useEffect(() => {
+    setVisited(prev => new Set([...prev, section]));
+  }, [section]);
 
   return (
     <View style={[styles.root, !isDesktop && styles.rootMobile]}>
@@ -50,7 +45,20 @@ export default function AdminPanel() {
         onNavigate={setSection}
       />
       <View style={styles.content}>
-        {renderPanel()}
+        {(["dashboard", "quotes", "leads", "testimonials", "gallery", "settings"] as Section[]).map((s) => (
+          <View key={s} style={[styles.panel, s !== section && styles.panelHidden]}>
+            {visited.has(s) && (
+              <>
+                {s === "dashboard"    && <DashboardPanel />}
+                {s === "quotes"       && <QuotesPanel />}
+                {s === "leads"        && <LeadsPanel />}
+                {s === "testimonials" && <TestimonialsPanel />}
+                {s === "gallery"      && <GalleryPanel />}
+                {s === "settings"     && <SettingsPanel />}
+              </>
+            )}
+          </View>
+        ))}
       </View>
     </View>
   );
@@ -70,6 +78,12 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: "column",
     backgroundColor: P.bg,
+  },
+  panel: {
+    flex: 1,
+  },
+  panelHidden: {
+    display: "none" as any,
   },
   center: {
     flex: 1,
