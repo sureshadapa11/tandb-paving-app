@@ -38,9 +38,8 @@ function StatusBadge({ status }: { status: string }) {
 
 const emptyLine = (): LineItem => ({ description: "", qty: "1", unit_price: "" });
 
-export default function Quotes() {
-  const { user, loading, logout } = useAuth();
-  const router = useRouter();
+export function QuotesPanel() {
+  const { user } = useAuth();
   const { width } = useWindowDimensions();
   const isDesktop = width >= 900;
 
@@ -66,10 +65,6 @@ export default function Quotes() {
       .catch(() => {});
   }, []);
   const [aiLoading, setAiLoading] = useState(false);
-
-  useEffect(() => {
-    if (!loading && !user) router.replace("/admin");
-  }, [user, loading]);
 
   const load = useCallback(async () => {
     setLoadError(false);
@@ -318,7 +313,7 @@ export default function Quotes() {
     setLineItems((prev) => prev.map((li, idx) => idx === i ? { ...li, [field]: val } : li));
   };
 
-  if (loading || fetching) {
+  if (fetching) {
     return <View style={styles.center}><ActivityIndicator size="large" color={P.copper} /></View>;
   }
 
@@ -548,24 +543,40 @@ export default function Quotes() {
   );
 
   return (
-    <View style={[styles.root, !isDesktop && { flexDirection: "column" }]}>
-      <AdminSidebar activeRoute="/admin/quotes" />
-      <View style={styles.main}>
-        <View style={styles.topBar}>
-          <Text style={styles.pageTitle}>Quotes Manager</Text>
-          <View style={styles.topRight}>
-            <Text style={styles.userName}>{user?.name}</Text>
-            <TouchableOpacity onPress={async () => { await logout(); router.replace("/admin"); }} style={styles.iconBtn}>
-              <Ionicons name="log-out-outline" size={20} color={P.muted} />
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        <View style={[styles.content, isDesktop && styles.contentDesktop]}>
-          {QuoteList}
-          {Builder}
+    <View style={styles.main}>
+      <View style={styles.topBar}>
+        <Text style={styles.pageTitle}>Quotes Manager</Text>
+        <View style={styles.topRight}>
+          <Text style={styles.userName}>{user?.name}</Text>
         </View>
       </View>
+
+      <View style={[styles.content, isDesktop && styles.contentDesktop]}>
+        {QuoteList}
+        {Builder}
+      </View>
+    </View>
+  );
+}
+
+export default function Quotes() {
+  const { user, loading, logout } = useAuth();
+  const router = useRouter();
+  const { width } = useWindowDimensions();
+  const isDesktop = width >= 900;
+
+  useEffect(() => {
+    if (!loading && !user) router.replace("/admin");
+  }, [user, loading]);
+
+  if (loading) {
+    return <View style={styles.center}><ActivityIndicator size="large" color={P.copper} /></View>;
+  }
+
+  return (
+    <View style={[styles.root, !isDesktop && { flexDirection: "column" }]}>
+      <AdminSidebar activeRoute="/admin/quotes" />
+      <QuotesPanel />
     </View>
   );
 }

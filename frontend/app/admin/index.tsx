@@ -18,7 +18,7 @@ export default function AdminLogin() {
 
   useEffect(() => {
     if (!loading && user) {
-      router.replace("/admin/dashboard");
+      router.replace("/admin/panel");
     }
   }, [user, loading]);
 
@@ -31,7 +31,7 @@ export default function AdminLogin() {
     setSubmitting(true);
     try {
       await login(email.trim(), password);
-      router.replace("/admin/dashboard");
+      router.replace("/admin/panel");
     } catch (e: any) {
       setError(e.message || "Login failed. Check your credentials.");
     } finally {

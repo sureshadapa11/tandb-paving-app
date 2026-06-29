@@ -27,9 +27,8 @@ function readFileAsBase64(file: File): Promise<string> {
   });
 }
 
-export default function Gallery() {
-  const { user, loading, logout } = useAuth();
-  const router = useRouter();
+export function GalleryPanel() {
+  const { user } = useAuth();
   const { width } = useWindowDimensions();
   const isDesktop = width >= 768;
   const fileInputRef = useRef<any>(null);
@@ -43,10 +42,6 @@ export default function Gallery() {
   const [uploading, setUploading] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [reorderingId, setReorderingId] = useState<number | null>(null);
-
-  useEffect(() => {
-    if (!loading && !user) router.replace("/admin");
-  }, [user, loading]);
 
   const load = useCallback(async () => {
     setLoadError(false);
@@ -130,22 +125,16 @@ export default function Gallery() {
   }
 
   return (
-    <View style={[styles.root, !isDesktop && { flexDirection: "column" }]}>
-      <AdminSidebar activeRoute="/admin/gallery" />
-
-      <View style={styles.main}>
-        {/* Top bar */}
-        <View style={styles.topBar}>
-          <Text style={styles.pageTitle}>Gallery Manager</Text>
-          <View style={styles.topRight}>
-            <Text style={styles.userName}>{user?.name}</Text>
-            <TouchableOpacity onPress={async () => { await logout(); router.replace("/admin"); }} style={styles.iconBtn}>
-              <Ionicons name="log-out-outline" size={20} color={P.muted} />
-            </TouchableOpacity>
-          </View>
+    <View style={styles.main}>
+      {/* Top bar */}
+      <View style={styles.topBar}>
+        <Text style={styles.pageTitle}>Gallery Manager</Text>
+        <View style={styles.topRight}>
+          <Text style={styles.userName}>{user?.name}</Text>
         </View>
+      </View>
 
-        <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
           {/* Upload section */}
           <View style={styles.uploadCard}>
             <Text style={styles.sectionTitle}>Upload New Photo</Text>
@@ -253,8 +242,29 @@ export default function Gallery() {
               ))}
             </View>
           )}
-        </ScrollView>
-      </View>
+      </ScrollView>
+    </View>
+  );
+}
+
+export default function Gallery() {
+  const { user, loading, logout } = useAuth();
+  const router = useRouter();
+  const { width } = useWindowDimensions();
+  const isDesktop = width >= 768;
+
+  useEffect(() => {
+    if (!loading && !user) router.replace("/admin");
+  }, [user, loading]);
+
+  if (loading) {
+    return <View style={styles.center}><ActivityIndicator size="large" color={P.copper} /></View>;
+  }
+
+  return (
+    <View style={[styles.root, !isDesktop && { flexDirection: "column" }]}>
+      <AdminSidebar activeRoute="/admin/gallery" />
+      <GalleryPanel />
     </View>
   );
 }

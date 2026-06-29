@@ -4,14 +4,7 @@ import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "@/src/context/AuthContext";
 
-const PAGE_TITLES: Record<string, string> = {
-  "/admin/dashboard":   "Dashboard",
-  "/admin/leads":       "Leads",
-  "/admin/quotes":      "Quotes",
-  "/admin/gallery":     "Gallery",
-  "/admin/testimonials":"Testimonials",
-  "/admin/settings":    "Settings",
-};
+export type Section = "dashboard" | "quotes" | "leads" | "testimonials" | "gallery" | "settings";
 
 const A = {
   bg: "#1A2A3A",
@@ -25,27 +18,55 @@ type NavItem = {
   label: string;
   icon: keyof typeof Ionicons.glyphMap;
   route: string;
+  section: Section;
 };
 
 const NAV_ITEMS: NavItem[] = [
-  { label: "Dashboard", icon: "home-outline", route: "/admin/dashboard" },
-  { label: "Leads", icon: "mail-outline", route: "/admin/leads" },
-  { label: "Quotes", icon: "document-text-outline", route: "/admin/quotes" },
-  { label: "Gallery", icon: "images-outline", route: "/admin/gallery" },
-  { label: "Testimonials", icon: "star-outline", route: "/admin/testimonials" },
-  { label: "Settings", icon: "settings-outline", route: "/admin/settings" },
+  { label: "Dashboard",    icon: "home-outline",          route: "/admin/dashboard",    section: "dashboard" },
+  { label: "Leads",        icon: "mail-outline",          route: "/admin/leads",        section: "leads" },
+  { label: "Quotes",       icon: "document-text-outline", route: "/admin/quotes",       section: "quotes" },
+  { label: "Gallery",      icon: "images-outline",        route: "/admin/gallery",      section: "gallery" },
+  { label: "Testimonials", icon: "star-outline",          route: "/admin/testimonials", section: "testimonials" },
+  { label: "Settings",     icon: "settings-outline",      route: "/admin/settings",     section: "settings" },
 ];
 
-type Props = {
-  activeRoute: string;
-};
+type Props =
+  | {
+      /** State-based mode: call onNavigate instead of router.push */
+      onNavigate: (section: Section) => void;
+      activeSection: Section;
+      activeRoute?: never;
+    }
+  | {
+      /** Legacy route-based mode: uses router.push and highlights by route string */
+      activeRoute: string;
+      onNavigate?: never;
+      activeSection?: never;
+    };
 
-export default function AdminSidebar({ activeRoute }: Props) {
+export default function AdminSidebar(props: Props) {
   const { width } = useWindowDimensions();
   const router = useRouter();
-  const { user, logout } = useAuth();
+  const { logout } = useAuth();
 
   const handleLogout = async () => { await logout(); router.replace("/admin"); };
+
+  /** Returns true when the given NAV_ITEMS entry should be highlighted */
+  const isActive = (item: NavItem): boolean => {
+    if (props.onNavigate) {
+      return props.activeSection === item.section;
+    }
+    return (props.activeRoute ?? "") === item.route;
+  };
+
+  /** Navigate to a nav item */
+  const handlePress = (item: NavItem) => {
+    if (props.onNavigate) {
+      props.onNavigate(item.section);
+    } else {
+      router.push(item.route as any);
+    }
+  };
 
   // Mobile — branding row + horizontal tab bar
   if (width < 768) {
@@ -76,21 +97,21 @@ export default function AdminSidebar({ activeRoute }: Props) {
           contentContainerStyle={styles.mobileTabBarContent}
         >
           {NAV_ITEMS.map((item) => {
-            const isActive = activeRoute === item.route;
+            const active = isActive(item);
             return (
               <TouchableOpacity
                 key={item.route}
-                style={[styles.mobileTab, isActive && styles.mobileTabActive]}
-                onPress={() => router.push(item.route as any)}
+                style={[styles.mobileTab, active && styles.mobileTabActive]}
+                onPress={() => handlePress(item)}
                 activeOpacity={0.7}
               >
                 <Ionicons
                   name={item.icon}
                   size={15}
-                  color={isActive ? "#FFFFFF" : A.active}
+                  color={active ? "#FFFFFF" : A.active}
                   style={{ marginRight: 5 }}
                 />
-                <Text style={[styles.mobileTabText, isActive && styles.mobileTabTextActive]}>
+                <Text style={[styles.mobileTabText, active && styles.mobileTabTextActive]}>
                   {item.label}
                 </Text>
               </TouchableOpacity>
@@ -118,21 +139,21 @@ export default function AdminSidebar({ activeRoute }: Props) {
       {/* Nav items */}
       <View style={styles.nav}>
         {NAV_ITEMS.map((item) => {
-          const isActive = activeRoute === item.route;
+          const active = isActive(item);
           return (
             <TouchableOpacity
               key={item.route}
-              style={[styles.navItem, isActive && styles.navItemActive]}
-              onPress={() => router.push(item.route as any)}
+              style={[styles.navItem, active && styles.navItemActive]}
+              onPress={() => handlePress(item)}
               activeOpacity={0.7}
             >
               <Ionicons
                 name={item.icon}
                 size={18}
-                color={isActive ? "#FFFFFF" : A.text}
+                color={active ? "#FFFFFF" : A.text}
                 style={styles.navIcon}
               />
-              <Text style={[styles.navLabel, isActive && styles.navLabelActive]}>
+              <Text style={[styles.navLabel, active && styles.navLabelActive]}>
                 {item.label}
               </Text>
             </TouchableOpacity>

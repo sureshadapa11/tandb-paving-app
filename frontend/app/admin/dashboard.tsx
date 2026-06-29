@@ -43,8 +43,8 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
-export default function Dashboard() {
-  const { user, loading, logout } = useAuth();
+export function DashboardPanel() {
+  const { user } = useAuth();
   const router = useRouter();
   const { width } = useWindowDimensions();
   const isDesktop = width >= 768;
@@ -53,10 +53,6 @@ export default function Dashboard() {
   const [enquiries, setEnquiries] = useState<Enquiry[]>([]);
   const [fetching, setFetching] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-
-  useEffect(() => {
-    if (!loading && !user) router.replace("/admin");
-  }, [user, loading]);
 
   const load = useCallback(async () => {
     try {
@@ -72,8 +68,6 @@ export default function Dashboard() {
 
   const onRefresh = () => { setRefreshing(true); load(); };
 
-  const handleLogout = async () => { await logout(); router.replace("/admin"); };
-
   const recent = [...enquiries].sort((a, b) =>
     new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
   ).slice(0, 5);
@@ -87,7 +81,109 @@ export default function Dashboard() {
     { label: "Gallery Photos", value: dash?.gallery_photos ?? "—", icon: "images", color: "#0EA5E9" },
   ];
 
-  if (loading || fetching) {
+  if (fetching) {
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator size="large" color={P.copper} />
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.main}>
+      {/* Top bar — desktop only */}
+      {isDesktop && (
+        <View style={styles.topBar}>
+          <Text style={styles.pageTitle}>Admin Dashboard</Text>
+          <View style={styles.topRight}>
+            <Text style={styles.userName}>{user?.name}</Text>
+          </View>
+        </View>
+      )}
+
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={P.copper} />}
+      >
+        {/* Stat cards */}
+        <View style={[styles.statsRow, !isDesktop && styles.statsRowMobile]}>
+          {statCards.map((s) => (
+            <View key={s.label} style={[styles.statCard, !isDesktop && styles.statCardHalf]}>
+              <View style={[styles.statIcon, { backgroundColor: s.color + "18" }]}>
+                <Ionicons name={s.icon as any} size={22} color={s.color} />
+              </View>
+              <Text style={styles.statValue}>{s.value}</Text>
+              <Text style={styles.statLabel}>{s.label}</Text>
+            </View>
+          ))}
+        </View>
+
+        {/* Recent enquiries */}
+        <Text style={styles.sectionTitle}>Recent Enquiries</Text>
+
+        {recent.length === 0 ? (
+          <View style={styles.emptyCard}>
+            <Text style={styles.emptyText}>No enquiries yet.</Text>
+          </View>
+        ) : (
+          recent.map((enq) => (
+            <View key={enq.id} style={styles.enquiryCard}>
+              <View style={styles.enquiryHeader}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.enquiryName}>{enq.name}</Text>
+                  <Text style={styles.enquiryService}>{enq.service}</Text>
+                </View>
+                <StatusBadge status={enq.status} />
+              </View>
+              <View style={styles.enquiryMeta}>
+                <Text style={styles.enquiryTime}>{timeAgo(enq.created_at)}</Text>
+                <View style={styles.enquiryActions}>
+                  <TouchableOpacity
+                    style={styles.actionBtn}
+                    onPress={() => Linking.openURL(`tel:${enq.phone}`)}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons name="call-outline" size={16} color={P.success} />
+                    <Text style={[styles.actionBtnText, { color: P.success }]}>Call</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.actionBtn}
+                    onPress={() => Linking.openURL(`mailto:${enq.email}`)}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons name="mail-outline" size={16} color="#3B82F6" />
+                    <Text style={[styles.actionBtnText, { color: "#3B82F6" }]}>Email</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          ))
+        )}
+
+        <TouchableOpacity
+          style={styles.viewAllBtn}
+          onPress={() => router.push("/admin/leads")}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.viewAllText}>View All Leads →</Text>
+        </TouchableOpacity>
+      </ScrollView>
+    </View>
+  );
+}
+
+export default function Dashboard() {
+  const { user, loading, logout } = useAuth();
+  const router = useRouter();
+  const { width } = useWindowDimensions();
+  const isDesktop = width >= 768;
+
+  useEffect(() => {
+    if (!loading && !user) router.replace("/admin");
+  }, [user, loading]);
+
+  if (loading) {
     return (
       <View style={styles.center}>
         <ActivityIndicator size="large" color={P.copper} />
@@ -98,90 +194,7 @@ export default function Dashboard() {
   return (
     <View style={[styles.root, !isDesktop && { flexDirection: "column" }]}>
       <AdminSidebar activeRoute="/admin/dashboard" />
-
-      <View style={styles.main}>
-        {/* Top bar — desktop only */}
-        {isDesktop && (
-          <View style={styles.topBar}>
-            <Text style={styles.pageTitle}>Admin Dashboard</Text>
-            <View style={styles.topRight}>
-              <Text style={styles.userName}>{user?.name}</Text>
-              <TouchableOpacity onPress={handleLogout} style={styles.logoutBtn} activeOpacity={0.7}>
-                <Ionicons name="log-out-outline" size={20} color={P.muted} />
-              </TouchableOpacity>
-            </View>
-          </View>
-        )}
-
-        <ScrollView
-          style={styles.scroll}
-          contentContainerStyle={styles.scrollContent}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={P.copper} />}
-        >
-          {/* Stat cards */}
-          <View style={[styles.statsRow, !isDesktop && styles.statsRowMobile]}>
-            {statCards.map((s) => (
-              <View key={s.label} style={[styles.statCard, !isDesktop && styles.statCardHalf]}>
-                <View style={[styles.statIcon, { backgroundColor: s.color + "18" }]}>
-                  <Ionicons name={s.icon as any} size={22} color={s.color} />
-                </View>
-                <Text style={styles.statValue}>{s.value}</Text>
-                <Text style={styles.statLabel}>{s.label}</Text>
-              </View>
-            ))}
-          </View>
-
-          {/* Recent enquiries */}
-          <Text style={styles.sectionTitle}>Recent Enquiries</Text>
-
-          {recent.length === 0 ? (
-            <View style={styles.emptyCard}>
-              <Text style={styles.emptyText}>No enquiries yet.</Text>
-            </View>
-          ) : (
-            recent.map((enq) => (
-              <View key={enq.id} style={styles.enquiryCard}>
-                <View style={styles.enquiryHeader}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.enquiryName}>{enq.name}</Text>
-                    <Text style={styles.enquiryService}>{enq.service}</Text>
-                  </View>
-                  <StatusBadge status={enq.status} />
-                </View>
-                <View style={styles.enquiryMeta}>
-                  <Text style={styles.enquiryTime}>{timeAgo(enq.created_at)}</Text>
-                  <View style={styles.enquiryActions}>
-                    <TouchableOpacity
-                      style={styles.actionBtn}
-                      onPress={() => Linking.openURL(`tel:${enq.phone}`)}
-                      activeOpacity={0.7}
-                    >
-                      <Ionicons name="call-outline" size={16} color={P.success} />
-                      <Text style={[styles.actionBtnText, { color: P.success }]}>Call</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={styles.actionBtn}
-                      onPress={() => Linking.openURL(`mailto:${enq.email}`)}
-                      activeOpacity={0.7}
-                    >
-                      <Ionicons name="mail-outline" size={16} color="#3B82F6" />
-                      <Text style={[styles.actionBtnText, { color: "#3B82F6" }]}>Email</Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              </View>
-            ))
-          )}
-
-          <TouchableOpacity
-            style={styles.viewAllBtn}
-            onPress={() => router.push("/admin/leads")}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.viewAllText}>View All Leads →</Text>
-          </TouchableOpacity>
-        </ScrollView>
-      </View>
+      <DashboardPanel />
     </View>
   );
 }

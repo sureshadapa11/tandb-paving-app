@@ -92,9 +92,8 @@ function ReplyBlock({ t, replies, replyLoadingId, generateReply, copyReply }: {
   );
 }
 
-export default function Testimonials() {
-  const { user, loading, logout } = useAuth();
-  const router = useRouter();
+export function TestimonialsPanel() {
+  const { user } = useAuth();
   const { width } = useWindowDimensions();
   const isDesktop = width >= 768;
 
@@ -114,10 +113,6 @@ export default function Testimonials() {
   const [formError, setFormError] = useState("");
   const [replyLoadingId, setReplyLoadingId] = useState<string | null>(null);
   const [replies, setReplies] = useState<Record<string, string>>({});
-
-  useEffect(() => {
-    if (!loading && !user) router.replace("/admin");
-  }, [user, loading]);
 
   const load = useCallback(async () => {
     setLoadError(false);
@@ -233,22 +228,16 @@ export default function Testimonials() {
   ];
 
   return (
-    <View style={[styles.root, !isDesktop && { flexDirection: "column" }]}>
-      <AdminSidebar activeRoute="/admin/testimonials" />
-
-      <View style={styles.main}>
-        <View style={styles.topBar}>
-          <Text style={styles.pageTitle}>Testimonials</Text>
-          <View style={styles.topRight}>
-            <Text style={styles.userName}>{user?.name}</Text>
-            <TouchableOpacity onPress={async () => { await logout(); router.replace("/admin"); }} style={styles.iconBtn}>
-              <Ionicons name="log-out-outline" size={20} color={P.muted} />
-            </TouchableOpacity>
-          </View>
+    <View style={styles.main}>
+      <View style={styles.topBar}>
+        <Text style={styles.pageTitle}>Testimonials</Text>
+        <View style={styles.topRight}>
+          <Text style={styles.userName}>{user?.name}</Text>
         </View>
+      </View>
 
-        {/* Tab bar */}
-        <View style={styles.tabBarWrap}>
+      {/* Tab bar */}
+      <View style={styles.tabBarWrap}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabBarContent}>
             {TABS.map((t) => (
               <TouchableOpacity
@@ -472,7 +461,28 @@ export default function Testimonials() {
           )}
 
         </ScrollView>
-      </View>
+    </View>
+  );
+}
+
+export default function Testimonials() {
+  const { user, loading, logout } = useAuth();
+  const router = useRouter();
+  const { width } = useWindowDimensions();
+  const isDesktop = width >= 768;
+
+  useEffect(() => {
+    if (!loading && !user) router.replace("/admin");
+  }, [user, loading]);
+
+  if (loading) {
+    return <View style={styles.center}><ActivityIndicator size="large" color={P.copper} /></View>;
+  }
+
+  return (
+    <View style={[styles.root, !isDesktop && { flexDirection: "column" }]}>
+      <AdminSidebar activeRoute="/admin/testimonials" />
+      <TestimonialsPanel />
     </View>
   );
 }
