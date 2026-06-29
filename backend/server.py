@@ -192,6 +192,7 @@ class TestimonialBody(BaseModel):
     job: str = ""
     stars: int = 5
     text: str
+    source: str = ""  # "checkatrade" | "google" | "website" | ""
 
 
 class ReviewSubmitBody(BaseModel):
@@ -200,6 +201,7 @@ class ReviewSubmitBody(BaseModel):
     job: str = ""
     stars: int = 5
     text: str
+    source: str = ""
 
 
 class SiteSettingsBody(BaseModel):
