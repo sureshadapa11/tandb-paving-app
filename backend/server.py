@@ -33,6 +33,11 @@ openai_client = AsyncOpenAI(api_key=OPENAI_API_KEY) if OPENAI_API_KEY else None
 SENDGRID_API_KEY = os.environ.get('SENDGRID_API_KEY', '')
 SENDER_EMAIL = os.environ.get('SENDER_EMAIL', '')
 OWNER_EMAIL = os.environ.get('OWNER_EMAIL', 'bbirdpaving@gmail.com')
+GOOGLE_PLACES_API_KEY = os.environ.get('GOOGLE_PLACES_API_KEY', '')
+
+# In-memory cache for Google reviews (TTL = 1 hour)
+_google_reviews_cache: dict = {}
+_google_reviews_fetched_at: float = 0.0
 
 app = FastAPI()
 api_router = APIRouter(prefix="/api")
@@ -208,6 +213,7 @@ class SiteSettingsBody(BaseModel):
     email: str = "bbirdpaving@gmail.com"
     hours: str = "Mon–Sat: 7:30am – 6:00pm"
     area: str = "Essex & Suffolk"
+    google_place_id: str = ""
     hero_slides: List[dict] = []
     faqs: List[dict] = []
     services: List[dict] = []
@@ -1171,6 +1177,57 @@ async def ai_review_reply(body: ReviewReplyBody, user=Depends(get_current_user))
         logger.error(f"Review reply error: {e}")
         raise HTTPException(status_code=500, detail="AI service error")
     return {"reply": reply}
+
+
+@api_router.get("/public/google-reviews")
+async def get_google_reviews():
+    """Fetch Google Place reviews, cached in-memory for 1 hour."""
+    global _google_reviews_cache, _google_reviews_fetched_at
+    now = _time.monotonic()
+    if _google_reviews_cache and (now - _google_reviews_fetched_at) < 3600:
+        return _google_reviews_cache
+
+    if not GOOGLE_PLACES_API_KEY:
+        return {"error": "not_configured", "rating": None, "total": 0, "reviews": []}
+
+    settings = await db.site_settings.find_one({})
+    place_id = (settings or {}).get("google_place_id", "").strip()
+    if not place_id:
+        return {"error": "no_place_id", "rating": None, "total": 0, "reviews": []}
+
+    try:
+        import httpx
+        url = (
+            f"https://maps.googleapis.com/maps/api/place/details/json"
+            f"?place_id={place_id}"
+            f"&fields=rating,user_ratings_total,reviews"
+            f"&reviews_sort=newest"
+            f"&key={GOOGLE_PLACES_API_KEY}"
+        )
+        async with httpx.AsyncClient(timeout=10) as client_h:
+            resp = await client_h.get(url)
+        data = resp.json()
+        result = data.get("result", {})
+        payload = {
+            "rating": result.get("rating"),
+            "total": result.get("user_ratings_total", 0),
+            "reviews": [
+                {
+                    "author": r.get("author_name", ""),
+                    "rating": r.get("rating", 5),
+                    "text": r.get("text", ""),
+                    "time": r.get("relative_time_description", ""),
+                    "photo": r.get("profile_photo_url", ""),
+                }
+                for r in result.get("reviews", [])[:5]
+            ],
+        }
+        _google_reviews_cache = payload
+        _google_reviews_fetched_at = now
+        return payload
+    except Exception as e:
+        logger.error(f"Google Reviews fetch error: {e}")
+        return {"error": "fetch_failed", "rating": None, "total": 0, "reviews": []}
 
 
 @api_router.get("/")
