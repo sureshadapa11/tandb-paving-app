@@ -838,6 +838,11 @@ async def dashboard(user=Depends(get_current_user)):
     pending_reviews = len([r for r in reviews if not r.get("approved", False)])
     approved_reviews = len([r for r in reviews if r.get("approved", False)])
     gallery_photos = await db.gallery.count_documents({"owner_id": user["id"]})
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    follow_ups_due = len([
+        e for e in enqs
+        if e.get("follow_up_date") and e["follow_up_date"] <= today and e.get("status") != "closed"
+    ])
     return {
         "new_enquiries": new_enqs,
         "total_enquiries": len(enqs),
@@ -845,6 +850,7 @@ async def dashboard(user=Depends(get_current_user)):
         "pending_reviews": pending_reviews,
         "approved_reviews": approved_reviews,
         "gallery_photos": gallery_photos,
+        "follow_ups_due": follow_ups_due,
     }
 
 
@@ -987,6 +993,13 @@ async def list_enquiries(user=Depends(get_current_user)):
 @api_router.put("/enquiries/{eid}/status")
 async def update_enquiry(eid: str, status: str, user=Depends(get_current_user)):
     await db.enquiries.update_one({"id": eid}, {"$set": {"status": status}})
+    return {"ok": True}
+
+
+@api_router.put("/enquiries/{eid}/follow-up")
+async def set_follow_up(eid: str, date: str = "", user=Depends(get_current_user)):
+    """Set or clear a follow-up date (YYYY-MM-DD). Pass empty string to clear."""
+    await db.enquiries.update_one({"id": eid}, {"$set": {"follow_up_date": date}})
     return {"ok": True}
 
 
