@@ -61,6 +61,7 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: "row",
     backgroundColor: P.bg,
+    minHeight: "100%" as any,
   },
   rootMobile: {
     flexDirection: "column",
@@ -68,7 +69,7 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     flexDirection: "column",
-    overflow: "hidden" as any,
+    backgroundColor: P.bg,
   },
   center: {
     flex: 1,
