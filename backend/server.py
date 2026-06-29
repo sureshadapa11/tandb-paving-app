@@ -1,4 +1,5 @@
 from fastapi import FastAPI, APIRouter, Depends, HTTPException, status, BackgroundTasks
+from fastapi.responses import Response
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
@@ -414,6 +415,178 @@ async def patch_quote_status(qid: str, status: str, background: BackgroundTasks,
 async def delete_quote(qid: str, user=Depends(get_current_user)):
     await db.quotes.delete_one({"id": qid})
     return {"ok": True}
+
+
+@api_router.get("/quotes/{qid}/pdf")
+async def download_quote_pdf(qid: str, user=Depends(get_current_user)):
+    from io import BytesIO
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib import colors
+    from reportlab.lib.units import mm
+    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, HRFlowable
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib.enums import TA_RIGHT, TA_LEFT, TA_CENTER
+
+    doc_data = await db.quotes.find_one({"id": qid, "owner_id": user["id"]})
+    if not doc_data:
+        raise HTTPException(404, "Quote not found")
+    q = clean(doc_data)
+
+    # Fetch business settings for contact info
+    settings = await db.site_settings.find_one({}) or {}
+    biz_phone = settings.get("phone", "01376 618683")
+    biz_mobile = settings.get("mobile", "07503 111803")
+    biz_email = settings.get("email", "bbirdpaving@gmail.com")
+
+    buf = BytesIO()
+    page_w, page_h = A4
+    doc = SimpleDocTemplate(
+        buf, pagesize=A4,
+        leftMargin=18*mm, rightMargin=18*mm,
+        topMargin=16*mm, bottomMargin=16*mm,
+    )
+
+    NAVY   = colors.HexColor("#1A2A3A")
+    COPPER = colors.HexColor("#B5651D")
+    MUTED  = colors.HexColor("#7A6A5A")
+    LIGHT  = colors.HexColor("#F2E4C8")
+    WHITE  = colors.white
+
+    styles = getSampleStyleSheet()
+    def style(name, **kw):
+        s = ParagraphStyle(name, **kw)
+        return s
+
+    biz_name_style  = style("BizName",  fontSize=22, fontName="Helvetica-Bold", textColor=NAVY, leading=26)
+    biz_sub_style   = style("BizSub",   fontSize=9,  fontName="Helvetica",      textColor=MUTED, leading=13)
+    label_style     = style("Label",    fontSize=8,  fontName="Helvetica-Bold", textColor=MUTED, leading=10, spaceAfter=2)
+    value_style     = style("Value",    fontSize=11, fontName="Helvetica-Bold", textColor=NAVY, leading=14)
+    value_sub_style = style("ValueSub", fontSize=9,  fontName="Helvetica",      textColor=MUTED, leading=11)
+    footer_style    = style("Footer",   fontSize=8,  fontName="Helvetica",      textColor=MUTED, alignment=TA_CENTER, leading=11)
+
+    created = datetime.fromisoformat(q.get("created_at", now_iso()).replace("Z","")).strftime("%d %B %Y")
+    quote_num = f"QT-{str(q.get('id',''))[:6].upper()}"
+
+    # ── Header row ──
+    header_left = [
+        Paragraph("T&amp;B Paving", biz_name_style),
+        Paragraph(f"{biz_phone} &nbsp;|&nbsp; {biz_mobile}", biz_sub_style),
+        Paragraph(biz_email, biz_sub_style),
+        Paragraph("Essex &amp; Suffolk", biz_sub_style),
+    ]
+    header_right = [
+        Paragraph('<font color="#B5651D"><b>QUOTATION</b></font>', style("QLabel", fontSize=26, fontName="Helvetica-Bold", textColor=COPPER, alignment=TA_RIGHT, leading=30)),
+        Paragraph(f'<font color="#7A6A5A">Ref: {quote_num}</font>', style("QRef", fontSize=9, fontName="Helvetica", textColor=MUTED, alignment=TA_RIGHT, leading=12)),
+        Paragraph(f'<font color="#7A6A5A">Date: {created}</font>', style("QDate", fontSize=9, fontName="Helvetica", textColor=MUTED, alignment=TA_RIGHT, leading=12)),
+        Paragraph('<font color="#7A6A5A">Valid for 30 days</font>', style("QValid", fontSize=9, fontName="Helvetica", textColor=MUTED, alignment=TA_RIGHT, leading=12)),
+    ]
+
+    header_table = Table([[header_left, header_right]], colWidths=["55%", "45%"])
+    header_table.setStyle(TableStyle([
+        ("VALIGN", (0,0), (-1,-1), "TOP"),
+        ("LEFTPADDING", (0,0), (-1,-1), 0),
+        ("RIGHTPADDING", (0,0), (-1,-1), 0),
+    ]))
+
+    # ── Client block ──
+    client_name = q.get("client_name", "")
+    client_email = q.get("client_email", "")
+    project_type = q.get("project_type", "")
+
+    client_data = [[
+        [Paragraph("PREPARED FOR", label_style),
+         Paragraph(client_name, value_style),
+         Paragraph(client_email, value_sub_style) if client_email else Spacer(1, 0),
+         Paragraph(project_type, value_sub_style) if project_type else Spacer(1, 0)],
+        [Spacer(1, 1)],
+    ]]
+    client_table = Table(client_data, colWidths=["60%", "40%"])
+    client_table.setStyle(TableStyle([
+        ("VALIGN", (0,0), (-1,-1), "TOP"),
+        ("LEFTPADDING", (0,0), (-1,-1), 0),
+        ("RIGHTPADDING", (0,0), (-1,-1), 0),
+    ]))
+
+    # ── Line items table ──
+    line_items = q.get("line_items", [])
+    li_header = [
+        Paragraph("<b>Description</b>", style("LH", fontSize=9, fontName="Helvetica-Bold", textColor=WHITE)),
+        Paragraph("<b>Qty</b>", style("LH2", fontSize=9, fontName="Helvetica-Bold", textColor=WHITE, alignment=TA_CENTER)),
+        Paragraph("<b>Unit Price</b>", style("LH3", fontSize=9, fontName="Helvetica-Bold", textColor=WHITE, alignment=TA_RIGHT)),
+        Paragraph("<b>Amount</b>", style("LH4", fontSize=9, fontName="Helvetica-Bold", textColor=WHITE, alignment=TA_RIGHT)),
+    ]
+    li_rows = [li_header]
+    for li in line_items:
+        amt = float(li.get("qty", 1)) * float(li.get("unit_price", 0))
+        li_rows.append([
+            Paragraph(str(li.get("description", "")), style("LR", fontSize=10, fontName="Helvetica", textColor=NAVY)),
+            Paragraph(str(li.get("qty", 1)), style("LR2", fontSize=10, fontName="Helvetica", textColor=NAVY, alignment=TA_CENTER)),
+            Paragraph(f"£{float(li.get('unit_price',0)):.2f}", style("LR3", fontSize=10, fontName="Helvetica", textColor=NAVY, alignment=TA_RIGHT)),
+            Paragraph(f"£{amt:.2f}", style("LR4", fontSize=10, fontName="Helvetica", textColor=NAVY, alignment=TA_RIGHT)),
+        ])
+
+    # Totals rows
+    subtotal = float(q.get("subtotal", 0))
+    tax      = float(q.get("tax", 0))
+    total    = float(q.get("total", 0))
+    tax_pct  = float(q.get("tax_percent", 0))
+
+    li_rows.append(["", "", Paragraph("Subtotal", style("Tot", fontSize=9, textColor=MUTED, alignment=TA_RIGHT)), Paragraph(f"£{subtotal:.2f}", style("TotV", fontSize=9, textColor=NAVY, alignment=TA_RIGHT))])
+    if tax_pct:
+        li_rows.append(["", "", Paragraph(f"VAT ({tax_pct:.0f}%)", style("Tot2", fontSize=9, textColor=MUTED, alignment=TA_RIGHT)), Paragraph(f"£{tax:.2f}", style("TotV2", fontSize=9, textColor=MUTED, alignment=TA_RIGHT))])
+    li_rows.append(["", "", Paragraph("<b>TOTAL</b>", style("TotF", fontSize=11, fontName="Helvetica-Bold", textColor=WHITE, alignment=TA_RIGHT)), Paragraph(f"<b>£{total:.2f}</b>", style("TotFV", fontSize=11, fontName="Helvetica-Bold", textColor=WHITE, alignment=TA_RIGHT))])
+
+    n_items = len(line_items)
+    col_w = [page_w - 36*mm - 20*mm - 40*mm - 40*mm, 20*mm, 40*mm, 40*mm]
+    li_table = Table(li_rows, colWidths=col_w, repeatRows=1)
+    total_row_idx = 1 + n_items + (1 if tax_pct else 0) + 1
+
+    ts = TableStyle([
+        # Header
+        ("BACKGROUND",  (0,0), (-1,0), NAVY),
+        ("ROWBACKGROUNDS", (0,1), (-1, n_items), [WHITE, LIGHT]),
+        ("FONTNAME",    (0,0), (-1,0), "Helvetica-Bold"),
+        ("FONTSIZE",    (0,0), (-1,0), 9),
+        ("TOPPADDING",  (0,0), (-1,-1), 6),
+        ("BOTTOMPADDING",(0,0), (-1,-1), 6),
+        ("LEFTPADDING", (0,0), (-1,-1), 6),
+        ("RIGHTPADDING",(0,0), (-1,-1), 6),
+        ("VALIGN",      (0,0), (-1,-1), "MIDDLE"),
+        ("LINEBELOW",   (0,0), (-1,0), 0.5, NAVY),
+        # Subtotal rows
+        ("LINEABOVE",   (0, n_items+1), (-1, n_items+1), 0.5, colors.HexColor("#E8D9C0")),
+        # Total row
+        ("BACKGROUND",  (2, total_row_idx), (-1, total_row_idx), COPPER),
+        ("LINEABOVE",   (0, total_row_idx), (-1, total_row_idx), 1, COPPER),
+    ])
+    li_table.setStyle(ts)
+
+    # ── Footer text ──
+    footer_text = (
+        "T&amp;B Paving · Essex &amp; Suffolk · 10-year workmanship guarantee · Free site survey included\n"
+        "This quotation is valid for 30 days from the date above. All prices include materials and labour unless stated."
+    )
+
+    story = [
+        header_table,
+        HRFlowable(width="100%", thickness=2, color=COPPER, spaceAfter=10, spaceBefore=6),
+        client_table,
+        Spacer(1, 8*mm),
+        li_table,
+        Spacer(1, 6*mm),
+        HRFlowable(width="100%", thickness=0.5, color=colors.HexColor("#E8D9C0"), spaceAfter=6),
+        Paragraph(footer_text, footer_style),
+    ]
+
+    doc.build(story)
+    buf.seek(0)
+    safe_name = client_name.replace(" ", "-").replace("/", "-")
+    filename = f"TB-Paving-Quote-{safe_name}.pdf"
+    return Response(
+        content=buf.getvalue(),
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
 
 # ---------- Workers & Attendance ----------
