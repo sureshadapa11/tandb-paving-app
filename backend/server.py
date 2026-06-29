@@ -232,6 +232,12 @@ class EstimateBody(BaseModel):
     location: str = ""
 
 
+class BeforeAfterBody(BaseModel):
+    label: str = ""
+    before_base64: str
+    after_base64: str
+
+
 class EnquiryBody(BaseModel):
     name: str
     phone: str = ""
@@ -528,6 +534,26 @@ async def public_gallery():
     """Public — returns all uploaded gallery photos."""
     docs = await db.photos.find({}).sort([("sort_order", 1), ("created_at", -1)]).to_list(200)
     return [clean(d) for d in docs]
+
+
+@api_router.get("/public/before-after")
+async def public_before_after():
+    docs = await db.before_after.find({}).sort("created_at", -1).to_list(20)
+    return [clean(d) for d in docs]
+
+
+@api_router.post("/before-after")
+async def create_before_after(body: BeforeAfterBody, user=Depends(get_current_user)):
+    doc = body.dict()
+    doc.update({"id": oid(), "owner_id": user["id"], "created_at": now_iso()})
+    await db.before_after.insert_one(doc)
+    return {"ok": True, "id": doc["id"]}
+
+
+@api_router.delete("/before-after/{bid}")
+async def delete_before_after(bid: str, user=Depends(get_current_user)):
+    await db.before_after.delete_one({"id": bid})
+    return {"ok": True}
 
 
 @api_router.post("/reviews/submit", dependencies=[Depends(rate_limit(5, 3600))])
