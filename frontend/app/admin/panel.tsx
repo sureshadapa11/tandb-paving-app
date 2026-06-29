@@ -21,7 +21,7 @@ export default function AdminPanel() {
   const isDesktop = width >= 768;
 
   const [section, setSection] = useState<Section>("dashboard");
-  // Lazy-mount: only render a panel after first visit, but never unmount it
+  // Lazy-mount: only render a panel the first time it's visited, never unmount after
   const [visited, setVisited] = useState<Set<Section>>(new Set<Section>(["dashboard"]));
 
   useEffect(() => {
@@ -45,14 +45,13 @@ export default function AdminPanel() {
   return (
     <View style={[styles.root, !isDesktop && styles.rootMobile]}>
       <AdminSidebar activeSection={section} onNavigate={setSection} />
+
+      {/* Content: active panel gets flex:1, hidden panels collapse to height:0 */}
       <View style={styles.content}>
         {ALL_SECTIONS.map((s) => (
           <View
             key={s}
-            style={[
-              styles.panel,
-              s === section ? styles.panelActive : styles.panelHidden,
-            ]}
+            style={s === section ? styles.panelActive : styles.panelHidden}
             pointerEvents={s === section ? "auto" : "none"}
           >
             {visited.has(s) && (
@@ -77,31 +76,24 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: "row",
     backgroundColor: P.bg,
-    minHeight: "100%" as any,
   },
   rootMobile: {
     flexDirection: "column",
   },
   content: {
     flex: 1,
+    flexDirection: "column",
     backgroundColor: P.bg,
-    position: "relative" as any,
   },
-  // All panels are stacked absolutely inside the content area
-  panel: {
-    position: "absolute" as any,
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-  },
+  // Active panel fills all available flex space
   panelActive: {
-    zIndex: 1,
-    opacity: 1,
+    flex: 1,
+    backgroundColor: P.bg,
   },
+  // Hidden panels take zero space and clip their content
   panelHidden: {
-    zIndex: 0,
-    opacity: 0,
+    height: 0,
+    overflow: "hidden",
   },
   center: {
     flex: 1,
