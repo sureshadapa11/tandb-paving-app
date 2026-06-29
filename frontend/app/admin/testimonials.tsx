@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from "react";
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
-  TextInput, ActivityIndicator, Alert, useWindowDimensions, Platform, Clipboard,
+  TextInput, ActivityIndicator, Alert, useWindowDimensions, Platform,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -9,15 +9,11 @@ import { useAuth } from "@/src/context/AuthContext";
 import { api } from "@/src/api";
 import AdminSidebar from "@/src/components/AdminSidebar";
 import { Image } from "react-native";
+import { P } from "@/src/adminTheme";
 
-const P = {
-  bg: "#F7F4F0", card: "#FFFFFF", navy: "#1A2A3A", copper: "#B5651D",
-  ink: "#1A2A3A", muted: "#7A6A5A", border: "#E8E0D4",
-  error: "#DC2626", gold: "#E0A732", success: "#2D7A4F",
-  pending: "#D97706",
-};
-
-const REVIEW_URL = "https://frontend-khaki-tau-70.vercel.app/review";
+const REVIEW_URL = typeof window !== "undefined"
+  ? `${window.location.origin}/review`
+  : "https://dist-weld-eight-62.vercel.app/review";
 
 type Testimonial = {
   id: string; name: string; town: string; job: string;
@@ -207,13 +203,12 @@ export default function Testimonials() {
     const reply = replies[id];
     if (!reply) return;
     if (Platform.OS === "web") {
-      (globalThis as any).navigator?.clipboard?.writeText(reply).catch(() => {
-        Clipboard.setString(reply);
-      });
+      (globalThis as any).navigator?.clipboard?.writeText(reply)
+        .then(() => Alert.alert("Copied", "Reply copied to clipboard."))
+        .catch(() => Alert.alert("Copy failed", "Please select and copy the text manually."));
     } else {
-      Clipboard.setString(reply);
+      Alert.alert("Copied", "Reply copied to clipboard.");
     }
-    Alert.alert("Copied", "Reply copied to clipboard.");
   };
 
   const downloadQR = () => {

@@ -8,12 +8,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "@/src/context/AuthContext";
 import { api } from "@/src/api";
 import AdminSidebar from "@/src/components/AdminSidebar";
-
-const P = {
-  bg: "#F7F4F0", card: "#FFFFFF", navy: "#1A2A3A", copper: "#B5651D",
-  ink: "#1A2A3A", muted: "#7A6A5A", border: "#E8E0D4",
-  success: "#2D7A4F", warning: "#D97706", error: "#DC2626",
-};
+import { P } from "@/src/adminTheme";
 
 type Enquiry = {
   id: number; name: string; email: string; phone: string;

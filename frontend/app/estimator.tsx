@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput,
-  ActivityIndicator, Platform,
+  ActivityIndicator, Platform, Linking,
 } from "react-native";
 import { useRouter } from "expo-router";
 import Head from "expo-router/head";
@@ -14,23 +14,25 @@ const BACKEND = process.env.EXPO_PUBLIC_BACKEND_URL ?? "";
 
 const SERVICES = [
   { id: "block-paving", label: "Block Paving", icon: "grid-outline" },
-  { id: "resin-bound", label: "Resin Bound", icon: "water-outline" },
+  { id: "resin", label: "Resin Bound", icon: "color-fill-outline" },
   { id: "tarmac", label: "Tarmac", icon: "car-outline" },
-  { id: "patio", label: "Patio / Garden", icon: "leaf-outline" },
-  { id: "gravel", label: "Gravel", icon: "ellipse-outline" },
+  { id: "patios", label: "Patios & Paving", icon: "leaf-outline" },
+  { id: "gravel", label: "Gravel & Shingle", icon: "ellipse-outline" },
   { id: "concrete", label: "Concrete", icon: "layers-outline" },
-  { id: "steps", label: "Garden Steps", icon: "trending-up-outline" },
+  { id: "paths", label: "Garden Paths", icon: "walk-outline" },
+  { id: "cleaning", label: "Cleaning & Sealing", icon: "water-outline" },
   { id: "other", label: "Other", icon: "build-outline" },
 ];
 
 const MATERIALS: Record<string, string[]> = {
   "block-paving": ["Brett Paving", "Marshalls", "Tobermore", "No preference"],
-  "resin-bound": ["Natural Aggregate", "Coloured Aggregate", "No preference"],
+  "resin": ["Natural Aggregate", "Coloured Aggregate", "No preference"],
   "tarmac": ["Standard Tarmac", "Coloured Tarmac", "No preference"],
-  "patio": ["Indian Sandstone", "Porcelain", "Block Paving", "No preference"],
+  "patios": ["Indian Sandstone", "Porcelain", "Block Paving", "No preference"],
   "gravel": ["Pea Gravel", "Slate Chips", "Cotswold Stone", "No preference"],
   "concrete": ["Standard", "Exposed Aggregate", "No preference"],
-  "steps": ["Natural Stone", "Brick", "Concrete", "No preference"],
+  "paths": ["Natural Stone", "Brick", "Porcelain", "No preference"],
+  "cleaning": ["Pressure Wash & Seal", "Deep Clean Only", "No preference"],
   "other": ["No preference"],
 };
 
@@ -215,7 +217,7 @@ export default function Estimator() {
                   />
                 </View>
 
-                <TouchableOpacity style={styles.callRow} onPress={() => {}}>
+                <TouchableOpacity style={styles.callRow} onPress={() => Linking.openURL("tel:01376618683")}>
                   <Ionicons name="call-outline" size={16} color={C.brand} />
                   <Text style={styles.callText}>Or call us: <Text style={{ fontWeight: "800" }}>01376 618683</Text></Text>
                 </TouchableOpacity>

@@ -8,14 +8,9 @@ import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "@/src/context/AuthContext";
 import { api } from "@/src/api";
 import AdminSidebar from "@/src/components/AdminSidebar";
+import { P } from "@/src/adminTheme";
 
 const BACKEND = process.env.EXPO_PUBLIC_BACKEND_URL ?? "";
-
-const P = {
-  bg: "#F7F4F0", card: "#FFFFFF", navy: "#1A2A3A", copper: "#B5651D",
-  ink: "#1A2A3A", muted: "#7A6A5A", border: "#E8E0D4",
-  success: "#2D7A4F", warning: "#D97706", error: "#DC2626",
-};
 
 type LineItem = { description: string; qty: string; unit_price: string };
 type QuoteLineItem = { description: string; qty: number; unit_price: number; amount: number };
@@ -62,6 +57,14 @@ export default function Quotes() {
   const [lineItems, setLineItems] = useState<LineItem[]>([emptyLine()]);
   const [taxPercent, setTaxPercent] = useState("20");
   const [aiDesc, setAiDesc] = useState("");
+  const [bizContact, setBizContact] = useState({ phone: "01376 618683", mobile: "07503 111803", email: "bbirdpaving@gmail.com" });
+
+  useEffect(() => {
+    fetch(`${BACKEND}/api/site-settings`)
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d) setBizContact({ phone: d.phone || "01376 618683", mobile: d.mobile || "07503 111803", email: d.email || "bbirdpaving@gmail.com" }); })
+      .catch(() => {});
+  }, []);
   const [aiLoading, setAiLoading] = useState(false);
 
   useEffect(() => {
@@ -153,7 +156,7 @@ export default function Quotes() {
       <div class="header">
         <div>
           <div class="biz-name">T&amp;B Paving</div>
-          <div class="biz-contact">01376 618683 &nbsp;|&nbsp; 07503 111803<br/>bbirdpaving@gmail.com<br/>Essex &amp; Suffolk</div>
+          <div class="biz-contact">${bizContact.phone} &nbsp;|&nbsp; ${bizContact.mobile}<br/>${bizContact.email}<br/>Essex &amp; Suffolk</div>
         </div>
         <div class="quote-meta">
           <div class="quote-label">Quotation</div>
@@ -201,6 +204,13 @@ export default function Quotes() {
       Alert.alert("Missing Info", "Please add at least one line item.");
       return;
     }
+    const invalidItem = lineItems.find(
+      li => !li.description.trim() || parseFloat(li.qty) <= 0 || parseFloat(li.unit_price) < 0
+    );
+    if (invalidItem) {
+      Alert.alert("Invalid Line Item", "Each item needs a description, a positive quantity, and a non-negative price.");
+      return;
+    }
     setSaving(true);
     const body = {
       client_name: clientName,
@@ -226,8 +236,8 @@ export default function Quotes() {
         "Saved",
         status === "sent"
           ? clientEmail.trim()
-            ? `Quote sent. Email delivered to ${clientEmail.trim()}.`
-            : "Quote marked as sent. No email sent (no client email provided)."
+            ? `Quote marked as sent. Use the print/PDF option to share it with ${clientEmail.trim()}.`
+            : "Quote marked as sent."
           : "Draft saved."
       );
     } catch (e: any) {
@@ -271,7 +281,7 @@ export default function Quotes() {
     if (!aiDesc.trim()) return;
     setAiLoading(true);
     try {
-      const res = await fetch(`${BACKEND}/api/ai/estimate`, {
+      const res = await fetch(`${BACKEND}/api/ai/paving-estimate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ description: aiDesc, area: "", quality: "standard", location: "Essex & Suffolk" }),
@@ -280,11 +290,15 @@ export default function Quotes() {
       const text: string = data.estimate ?? "";
       const parsed: LineItem[] = [];
       for (const line of text.split("\n")) {
-        const match = line.match(/^[-•*]?\s*(.+?)[:\s]+£([\d,]+(?:\.\d+)?)/);
+        const clean = line.replace(/\*+/g, "").replace(/#+/g, "").trim();
+        if (!clean) continue;
+        // Match: "Description: £1,200" or "Description — £1,200" or "Description £1,200"
+        // Also handles ranges like "£800–£1,200" by taking the higher value
+        const match = clean.match(/^[-•·]?\s*(.+?)[\s:–—]+£([\d,]+(?:\.\d+)?)(?:[–—]£[\d,]+)?/);
         if (match) {
-          const desc = match[1].trim().replace(/\*+/g, "");
+          const desc = match[1].trim().replace(/[:\-–—]+$/, "").trim();
           const price = match[2].replace(/,/g, "");
-          if (desc && price && parseFloat(price) > 0) {
+          if (desc && parseFloat(price) > 0) {
             parsed.push({ description: desc, qty: "1", unit_price: price });
           }
         }
@@ -526,7 +540,7 @@ export default function Quotes() {
           {saving ? (
             <ActivityIndicator size="small" color="#FFFFFF" />
           ) : (
-            <Text style={[styles.saveBtnText, { color: "#FFFFFF" }]}>Send Quote</Text>
+            <Text style={[styles.saveBtnText, { color: "#FFFFFF" }]}>Mark as Sent</Text>
           )}
         </TouchableOpacity>
       </View>

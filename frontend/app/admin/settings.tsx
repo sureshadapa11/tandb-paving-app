@@ -9,12 +9,7 @@ import { useAuth } from "@/src/context/AuthContext";
 import { api } from "@/src/api";
 import AdminSidebar from "@/src/components/AdminSidebar";
 import { BIZ, FAQS, SERVICES, AREAS, STATS, STEPS } from "@/src/brand";
-
-const P = {
-  bg: "#F7F4F0", card: "#FFFFFF", navy: "#1A2A3A", copper: "#B5651D",
-  ink: "#1A2A3A", muted: "#7A6A5A", border: "#E8E0D4",
-  error: "#DC2626", success: "#2D7A4F",
-};
+import { P } from "@/src/adminTheme";
 
 type Tab = "biz" | "faqs" | "hero" | "hero-images" | "services" | "areas" | "stats" | "steps";
 type FAQ = { q: string; a: string };
@@ -39,6 +34,7 @@ export default function Settings() {
 
   const [tab, setTab] = useState<Tab>("biz");
   const [fetching, setFetching] = useState(true);
+  const [fetchError, setFetchError] = useState(false);
   const [saving, setSaving] = useState(false);
   const [savedTab, setSavedTab] = useState<Tab | null>(null);
 
@@ -115,7 +111,9 @@ export default function Settings() {
           setHeroPreview(imgs.map((b: string) => b ? `data:image/jpeg;base64,${b}` : ""));
         }
       }
-    } catch {}
+    } catch {
+      setFetchError(true);
+    }
     setFetching(false);
   }, []);
 
@@ -177,6 +175,22 @@ export default function Settings() {
 
   if (loading || fetching) {
     return <View style={styles.center}><ActivityIndicator size="large" color={P.copper} /></View>;
+  }
+
+  if (fetchError) {
+    return (
+      <View style={styles.center}>
+        <Ionicons name="cloud-offline-outline" size={40} color={P.muted} />
+        <Text style={{ color: P.ink, fontSize: 16, fontWeight: "700", marginTop: 12 }}>Failed to load settings</Text>
+        <Text style={{ color: P.muted, fontSize: 13, marginTop: 4, marginBottom: 16 }}>Check your connection and try again.</Text>
+        <TouchableOpacity
+          style={{ backgroundColor: P.copper, borderRadius: 8, paddingVertical: 10, paddingHorizontal: 24 }}
+          onPress={() => { setFetchError(false); setFetching(true); load(); }}
+        >
+          <Text style={{ color: "#fff", fontWeight: "700" }}>Retry</Text>
+        </TouchableOpacity>
+      </View>
+    );
   }
 
   const updateService = (i: number, field: keyof Service, val: string) =>

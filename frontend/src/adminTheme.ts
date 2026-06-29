@@ -1,0 +1,15 @@
+export const P = {
+  bg: "#F7F4F0",
+  card: "#FFFFFF",
+  navy: "#1A2A3A",
+  copper: "#B5651D",
+  copperDark: "#8B4513",
+  ink: "#1A2A3A",
+  muted: "#7A6A5A",
+  border: "#E8E0D4",
+  success: "#2D7A4F",
+  warning: "#D97706",
+  error: "#DC2626",
+  gold: "#F59E0B",
+  pending: "#D97706",
+};

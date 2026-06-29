@@ -5,18 +5,7 @@ import {
 } from "react-native";
 import { useRouter, Link } from "expo-router";
 import { useAuth } from "@/src/context/AuthContext";
-
-const P = {
-  bg: "#F2E8D8",
-  card: "#FFFFFF",
-  copper: "#B5651D",
-  copperDark: "#8B4513",
-  navy: "#1A2A3A",
-  ink: "#1A2A3A",
-  muted: "#7A6A5A",
-  border: "#E8E0D4",
-  error: "#DC2626",
-};
+import { P } from "@/src/adminTheme";
 
 export default function AdminLogin() {
   const { user, loading, login } = useAuth();

@@ -52,6 +52,11 @@ export default function Quote() {
 
   const call = (num: string) => Linking.openURL(`tel:${num.replace(/\s/g, "")}`);
   const mail = () => Linking.openURL(`mailto:${bizContact.email}`);
+  const whatsapp = () => {
+    const num = bizContact.mobile.replace(/\D/g, "");
+    const intl = num.startsWith("0") ? "44" + num.slice(1) : num;
+    Linking.openURL(`https://wa.me/${intl}?text=Hi%2C%20I%27d%20like%20a%20free%20quote%20from%20T%26B%20Paving`);
+  };
 
   const submit = async () => {
     setErr("");
@@ -151,6 +156,11 @@ export default function Quote() {
               </>
             )}
 
+            <Pressable testID="quote-whatsapp" style={styles.whatsappBtn} onPress={whatsapp}>
+              <Ionicons name="logo-whatsapp" size={20} color="#25D366" />
+              <Text style={styles.whatsappText}>WhatsApp Us</Text>
+            </Pressable>
+
             <View style={styles.hoursRow}>
               <Ionicons name="time" size={15} color={C.muted} />
               <Text style={styles.hoursText}>{bizContact.hours}  ·  Free site survey</Text>
@@ -248,6 +258,8 @@ const styles = StyleSheet.create({
   contactVal: { fontSize: 13, fontWeight: "800", color: C.ink, marginTop: 2, textAlign: "center" },
   emailBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: C.surfaceAlt, borderRadius: R.md, padding: S.md },
   emailText: { fontSize: 14, fontWeight: "700", color: C.ink },
+  whatsappBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: "#DCFCE7", borderRadius: R.md, padding: S.md, marginTop: S.md, borderWidth: 1, borderColor: "#86EFAC" },
+  whatsappText: { fontSize: 14, fontWeight: "800", color: "#15803D" },
   hoursRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, marginTop: S.md },
   hoursText: { fontSize: 13, color: C.muted, fontWeight: "600" },
   aiCard: { backgroundColor: C.surface, borderRadius: R.xl, padding: S.lg, borderWidth: 1, borderColor: C.border, ...SHADOW.card, marginBottom: S.lg },

@@ -14,6 +14,8 @@ const BACKEND = process.env.EXPO_PUBLIC_BACKEND_URL ?? "";
 
 type GalleryItem = { img: any; label: string; town: string; isUploaded?: boolean };
 
+let galleryCache: GalleryItem[] | null = null;
+
 export default function Gallery() {
   const insets = useSafeAreaInsets();
   const [active, setActive] = useState<number | null>(null);
@@ -26,15 +28,22 @@ export default function Gallery() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (galleryCache) {
+      setUploaded(galleryCache);
+      setLoading(false);
+      return;
+    }
     fetch(`${BACKEND}/api/public/gallery`)
       .then(r => r.ok ? r.json() : [])
       .then((docs: any[]) => {
-        setUploaded(docs.map(d => ({
+        const items = docs.map(d => ({
           img: { uri: `data:image/jpeg;base64,${d.image_base64 || d.image}` },
           label: d.caption || "Project Photo",
           town: d.town || "",
           isUploaded: true,
-        })));
+        }));
+        galleryCache = items;
+        setUploaded(items);
       })
       .catch(() => {})
       .finally(() => setLoading(false));
