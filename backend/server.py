@@ -238,6 +238,9 @@ class EnquiryBody(BaseModel):
     email: str = ""
     service: str = ""
     message: str = ""
+    postcode: str = ""
+    area_size: str = ""
+    photo_base64: str = ""
 
 
 class PavingEstimateBody(BaseModel):
@@ -655,14 +658,20 @@ def send_owner_email(enq: dict):
     try:
         from sendgrid import SendGridAPIClient
         from sendgrid.helpers.mail import Mail
+        photo_html = f'<p><strong>Photo:</strong> <img src="data:image/jpeg;base64,{enq["photo_base64"]}" style="max-width:400px;border-radius:8px;margin-top:8px"/></p>' if enq.get("photo_base64") else ""
         html = f"""
-        <h2>New T&amp;B Paving enquiry</h2>
-        <p><strong>Name:</strong> {enq.get('name','')}</p>
-        <p><strong>Phone:</strong> {enq.get('phone','-')}</p>
-        <p><strong>Email:</strong> {enq.get('email','-')}</p>
-        <p><strong>Service:</strong> {enq.get('service','-')}</p>
-        <p><strong>Message:</strong><br/>{enq.get('message','-')}</p>
-        <hr/><p style="color:#888">Sent automatically from your T&amp;B Paving website.</p>
+        <h2 style="color:#1A2A3A">New T&amp;B Paving Enquiry</h2>
+        <table style="border-collapse:collapse;width:100%;max-width:500px">
+          <tr><td style="padding:8px 0;color:#7A6A5A;font-weight:600;width:120px">Name</td><td style="padding:8px 0;color:#1A2A3A;font-weight:700">{enq.get('name','')}</td></tr>
+          <tr><td style="padding:8px 0;color:#7A6A5A;font-weight:600">Phone</td><td style="padding:8px 0;color:#1A2A3A">{enq.get('phone','-')}</td></tr>
+          <tr><td style="padding:8px 0;color:#7A6A5A;font-weight:600">Email</td><td style="padding:8px 0;color:#1A2A3A">{enq.get('email','-')}</td></tr>
+          <tr><td style="padding:8px 0;color:#7A6A5A;font-weight:600">Service</td><td style="padding:8px 0;color:#1A2A3A">{enq.get('service','-')}</td></tr>
+          <tr><td style="padding:8px 0;color:#7A6A5A;font-weight:600">Postcode</td><td style="padding:8px 0;color:#1A2A3A">{enq.get('postcode','-')}</td></tr>
+          <tr><td style="padding:8px 0;color:#7A6A5A;font-weight:600">Area Size</td><td style="padding:8px 0;color:#1A2A3A">{enq.get('area_size','-')}</td></tr>
+          <tr><td style="padding:8px 0;color:#7A6A5A;font-weight:600;vertical-align:top">Message</td><td style="padding:8px 0;color:#1A2A3A">{enq.get('message','-')}</td></tr>
+        </table>
+        {photo_html}
+        <hr style="margin-top:24px"/><p style="color:#aaa;font-size:12px">Sent automatically from your T&amp;B Paving website.</p>
         """
         msg = Mail(from_email=SENDER_EMAIL, to_emails=OWNER_EMAIL,
                    subject=f"New enquiry: {enq.get('name','')} ({enq.get('service','general')})",
