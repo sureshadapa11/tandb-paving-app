@@ -1,17 +1,17 @@
-// T&B Paving — warm, trustworthy brand palette (v2)
-export const _v = 2;
+// T&B Paving — warm parchment / burnt-orange palette (v3)
+export const _v = 3;
 export const C = {
-  brand: "#FC6A03",        // chosen blaze orange (accents, icons, highlights)
-  brandDark: "#D45700",    // deeper shade for buttons/gradients (readable white text)
-  accent: "#FF9A4D",       // lighter orange
-  accentSoft: "#FFE7D2",   // soft orange tint
+  brand: "#B5651D",        // burnt orange / copper
+  brandDark: "#8B4513",    // saddle brown — buttons, pressed states
+  accent: "#D4894A",       // warm mid-orange
+  accentSoft: "#F0DCCA",   // soft tinted parchment
   ink: "#1E1B18",          // warm near-black
   inkSoft: "#4A443D",
-  bg: "#FAF6F1",           // warm cream
-  surface: "#FFFFFF",
-  surfaceAlt: "#F2EBE2",
-  muted: "#857C72",
-  border: "#EBE2D6",
+  bg: "#F2E4C8",           // warm parchment / sand
+  surface: "#FAF5EC",      // warm near-white cards
+  surfaceAlt: "#E8D9C0",   // deeper sand alt
+  muted: "#8A7A66",        // warm gray-brown
+  border: "#D8C9B0",       // warm tan border
   gold: "#E0A732",         // stars
   success: "#2E7D32",
   error: "#C0392B",
