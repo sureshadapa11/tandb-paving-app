@@ -803,8 +803,8 @@ async def update_site_settings(body: SiteSettingsBody, user=Depends(get_current_
 
 @api_router.put("/site-settings/hero-image/{slot}")
 async def update_hero_image(slot: int, body: HeroImageBody, user=Depends(get_current_user)):
-    if slot < 0 or slot > 4:
-        raise HTTPException(status_code=400, detail="Slot must be 0–4")
+    if slot < 0 or slot > 19:
+        raise HTTPException(status_code=400, detail="Slot must be 0–19")
     existing = await db.site_settings.find_one({"owner_id": user["id"]})
     images: list = existing.get("hero_images", []) if existing else []
     while len(images) <= slot:
@@ -820,8 +820,8 @@ async def update_hero_image(slot: int, body: HeroImageBody, user=Depends(get_cur
 
 @api_router.delete("/site-settings/hero-image/{slot}")
 async def delete_hero_image(slot: int, user=Depends(get_current_user)):
-    if slot < 0 or slot > 4:
-        raise HTTPException(status_code=400, detail="Slot must be 0–4")
+    if slot < 0 or slot > 19:
+        raise HTTPException(status_code=400, detail="Slot must be 0–19")
     existing = await db.site_settings.find_one({"owner_id": user["id"]})
     images: list = existing.get("hero_images", []) if existing else []
     while len(images) <= slot:
